@@ -10,6 +10,10 @@ function Player:onLook(thing, position, distance)
 	if EventCallback.onLook then
 		description = EventCallback.onLook(self, thing, position, distance, description)
 	end
+	if thing:isItem() then
+		local itemAdditionalDescription = KOD_Attribute_onLook(thing)
+		description = description .. itemAdditionalDescription
+	end
 	self:sendTextMessage(MESSAGE_INFO_DESCR, description)
 end
 
@@ -25,6 +29,10 @@ function Player:onLookInTrade(partner, item, distance)
 	local description = "You see " .. item:getDescription(distance)
 	if EventCallback.onLookInTrade then
 		description = EventCallback.onLookInTrade(self, partner, item, distance, description)
+	end
+	if item:isItem() then
+		local itemAdditionalDescription = KOD_Attribute_onLook(item)
+		description = description .. itemAdditionalDescription
 	end
 	self:sendTextMessage(MESSAGE_INFO_DESCR, description)
 end
@@ -54,6 +62,7 @@ function Player:onItemMoved(item, count, fromPosition, toPosition, fromCylinder,
 	if EventCallback.onItemMoved then
 		EventCallback.onItemMoved(self, item, count, fromPosition, toPosition, fromCylinder, toCylinder)
 	end
+	KOD_Attribute_onItemMoved(item, self, fromPosition, toPosition)
 end
 
 function Player:onMoveCreature(creature, fromPosition, toPosition)

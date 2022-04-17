@@ -9,6 +9,7 @@ function Monster:onDropLoot(corpse)
 end
 
 function Monster:onSpawn(position, startup, artificial)
+	self:registerEvent("KOD_Attribute_onHealthChange")
 	if EventCallback.onSpawn then
 		return EventCallback.onSpawn(self, position, startup, artificial)
 	else
