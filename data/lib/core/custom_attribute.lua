@@ -5,8 +5,8 @@
 -- put dofile('data/lib/core/custom_attribute.lua')
 
 KOD_Attribute_config = {
-	maxSlots = 20,
-	allowSameAttribute = true,
+	maxSlots = 6,
+	allowSameAttribute = false,
 	slotCount = "atr_slotCount",
 	stotNameBase = "kod_slot_name_",
 	slotValueBase = "kod_slot_value_",
@@ -85,8 +85,7 @@ function rollRarity()
 	local roll = math.random(1, maxRollNumber)
 	for i = #rollChance, 1, -1 do
 		if roll >= rollChance[i] then
-			--return #rollChance - i
-			return KOD_Attribute_config.maxSlots
+			return #rollChance - i
 		end
 	end
 	return 0
