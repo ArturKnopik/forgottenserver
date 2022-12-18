@@ -1,3 +1,6 @@
+if FEATURE.uniqueItems.enabled  == true then
+    local maxDamageReduction = 20 -- min damage taken
+    
     local KOD_Attribute_onHealthChange = CreatureEvent("KOD_Attribute_onHealthChange")
     function KOD_Attribute_onHealthChange.onHealthChange(target, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
         if primaryType == COMBAT_HEALING or (primaryType == COMBAT_MANADRAIN and primaryDamage > 0) then
@@ -42,8 +45,8 @@
                 end
             end
         end
-        if attackMultipler < 80 then
-            attackMultipler = 80
+        if attackMultipler < maxDamageReduction then
+            attackMultipler = maxDamageReduction
         end
         return primaryDamage * (attackMultipler/100), primaryType, secondaryDamage, secondaryType
     end
@@ -93,8 +96,8 @@
                 end
             end
         end
-        if attackMultipler < 80 then
-            attackMultipler = 80
+        if attackMultipler < maxDamageReduction then
+            attackMultipler = maxDamageReduction
         end
         return primaryDamage * (attackMultipler/100), primaryType, secondaryDamage, secondaryType
     end
@@ -138,3 +141,4 @@
         return true
     end
     KOD_Attribute_onLogout:register()
+end

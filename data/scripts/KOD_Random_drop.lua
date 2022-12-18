@@ -1,56 +1,59 @@
-local chanceToBetterItem = 2 --more means less chance (1 / chanceToBetterItem)
+if FEATURE.uniqueItems.enabled  == true then
+	local chanceToBetterItem = 2 --more means less chance (1 / chanceToBetterItem)
+	local magicEffectOnDrop = 171
 
-local function getItemAttack(uid) return ItemType(Item(uid):getId()):getAttack() end
-local function getItemDefense(uid) return ItemType(Item(uid):getId()):getDefense() end
-local function getItemArmor(uid) return ItemType(Item(uid):getId()):getArmor() end
-local function getItemWeaponType(uid) return ItemType(Item(uid):getId()):getWeaponType() end
-local function isArmor(uid) if (getItemArmor(uid) ~= 0 and getItemWeaponType(uid) == 0) then return true else return false end end
-local function isWeapon(uid) return (getItemWeaponType(uid) > 0 and getItemWeaponType(uid) ~= 4) end
-local function isShield(uid) return getItemWeaponType(uid) == 4 end
-local function isBow(uid) return (getItemWeaponType(uid) == 5 and (not ItemType(Item(uid):getId()):isStackable())) end
+	local function getItemAttack(uid) return ItemType(Item(uid):getId()):getAttack() end
+	local function getItemDefense(uid) return ItemType(Item(uid):getId()):getDefense() end
+	local function getItemArmor(uid) return ItemType(Item(uid):getId()):getArmor() end
+	local function getItemWeaponType(uid) return ItemType(Item(uid):getId()):getWeaponType() end
+	local function isArmor(uid) if (getItemArmor(uid) ~= 0 and getItemWeaponType(uid) == 0) then return true else return false end end
+	local function isWeapon(uid) return (getItemWeaponType(uid) > 0 and getItemWeaponType(uid) ~= 4) end
+	local function isShield(uid) return getItemWeaponType(uid) == 4 end
+	local function isBow(uid) return (getItemWeaponType(uid) == 5 and (not ItemType(Item(uid):getId()):isStackable())) end
 
-local function scanContainer(position)
-	local corpse = Tile(position):getTopDownItem()
-	if not corpse or not getContainerSize(corpse.uid) == 0 then
-		return
-	end
-	if corpse and corpse:getType():isContainer()  then
-		local corpSize = corpse:getSize()
-		if not corpSize then
+	local function scanContainer(position)
+		local corpse = Tile(position):getTopDownItem()
+		if not corpse or not getContainerSize(corpse.uid) == 0 then
 			return
 		end
-		if  corpSize <= 0 then
-			return
-		end
-		for a = corpse:getSize() - 1, 0, -1 do
-			local containerItem = corpse:getItem(a)
-			if containerItem then
-				local itemtype = ItemType(containerItem:getId())
-				if itemtype:isStackable() == false and
-						(isWeapon(containerItem.uid) or isArmor(containerItem.uid) or isBow(containerItem.uid) or isShield(containerItem.uid)) then
-					if math.random(1, chanceToBetterItem) == 1 then
-						containerItem:KOD_rollIAndSetItemAttributes()
-						position:sendMagicEffect(171)
+		if corpse and corpse:getType():isContainer()  then
+			local corpSize = corpse:getSize()
+			if not corpSize then
+				return
+			end
+			if  corpSize <= 0 then
+				return
+			end
+			for a = corpse:getSize() - 1, 0, -1 do
+				local containerItem = corpse:getItem(a)
+				if containerItem then
+					local itemtype = ItemType(containerItem:getId())
+					if itemtype:isStackable() == false and
+							(isWeapon(containerItem.uid) or isArmor(containerItem.uid) or isBow(containerItem.uid) or isShield(containerItem.uid)) then
+						if math.random(1, chanceToBetterItem) == 1 then
+							containerItem:KOD_rollIAndSetItemAttributes()
+							position:sendMagicEffect(magicEffectOnDrop)
+						end
 					end
 				end
 			end
 		end
 	end
-end
 
-local randomstats_loot = CreatureEvent("KOD_randomstats_loot")
-function randomstats_loot.onKill(player, target)
-	if not target:isMonster() then
+	local randomstats_loot = CreatureEvent("KOD_randomstats_loot")
+	function randomstats_loot.onKill(player, target)
+		if not target:isMonster() then
+			return true
+		end
+		addEvent(scanContainer, 100, target:getPosition())
 		return true
 	end
-	addEvent(scanContainer, 100, target:getPosition())
-	return true
-end
-randomstats_loot:register()
+	randomstats_loot:register()
 
-local randomstats_register = CreatureEvent("KOD_randomstats_login")
-function randomstats_register.onLogin(player)
-	player:registerEvent("KOD_randomstats_loot")
-	return true
+	local randomstats_register = CreatureEvent("KOD_randomstats_login")
+	function randomstats_register.onLogin(player)
+		player:registerEvent("KOD_randomstats_loot")
+		return true
+	end
+	randomstats_register:register()
 end
-randomstats_register:register()

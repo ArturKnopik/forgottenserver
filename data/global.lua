@@ -1,7 +1,7 @@
 math.randomseed(os.time())
 
 FEATURE = {
-	uniqueItems = {name = "Unique Items", enabled = true},
+	uniqueItems = {name = "Unique Items", enabled = true}, -- Enable or disable feature
 }
 
 print("|------------------------------------------|")

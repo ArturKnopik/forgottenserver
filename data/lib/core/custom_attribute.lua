@@ -109,6 +109,7 @@ if FEATURE.uniqueItems.enabled  == true then
 		for i = #rollChance, 1, -1 do
 			if roll >= rollChance[i] then
 				printD("rolled and returned :" .. #rollChance - i  .. ":" .. rollChance[i] )
+				--return #rollChance - i
 				return #rollChance - i
 			end
 		end
@@ -959,7 +960,7 @@ if FEATURE.uniqueItems.enabled  == true then
 		[9] = { -- Fire Resistance %
 			attribute = {
 				name = 'Fire Resistance',
-				value = {1, 10},
+				value = {1, 10000},
 			},
 			restricted = {
 				exclude = {
