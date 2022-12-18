@@ -960,7 +960,7 @@ if FEATURE.uniqueItems.enabled  == true then
 		[9] = { -- Fire Resistance %
 			attribute = {
 				name = 'Fire Resistance',
-				value = {1, 10000},
+				value = {1, 10},
 			},
 			restricted = {
 				exclude = {
