@@ -1,13 +1,13 @@
-local chanceToBetterItem = 2 --more means less chance
+local chanceToBetterItem = 2 --more means less chance (1 / chanceToBetterItem)
 
-function getItemAttack(uid) return ItemType(Item(uid):getId()):getAttack() end
-function getItemDefense(uid) return ItemType(Item(uid):getId()):getDefense() end
-function getItemArmor(uid) return ItemType(Item(uid):getId()):getArmor() end
-function getItemWeaponType(uid) return ItemType(Item(uid):getId()):getWeaponType() end
-function isArmor(uid) if (getItemArmor(uid) ~= 0 and getItemWeaponType(uid) == 0) then return true else return false end end
-function isWeapon(uid) return (getItemWeaponType(uid) > 0 and getItemWeaponType(uid) ~= 4) end
-function isShield(uid) return getItemWeaponType(uid) == 4 end
-function isBow(uid) return (getItemWeaponType(uid) == 5 and (not ItemType(Item(uid):getId()):isStackable())) end
+local function getItemAttack(uid) return ItemType(Item(uid):getId()):getAttack() end
+local function getItemDefense(uid) return ItemType(Item(uid):getId()):getDefense() end
+local function getItemArmor(uid) return ItemType(Item(uid):getId()):getArmor() end
+local function getItemWeaponType(uid) return ItemType(Item(uid):getId()):getWeaponType() end
+local function isArmor(uid) if (getItemArmor(uid) ~= 0 and getItemWeaponType(uid) == 0) then return true else return false end end
+local function isWeapon(uid) return (getItemWeaponType(uid) > 0 and getItemWeaponType(uid) ~= 4) end
+local function isShield(uid) return getItemWeaponType(uid) == 4 end
+local function isBow(uid) return (getItemWeaponType(uid) == 5 and (not ItemType(Item(uid):getId()):isStackable())) end
 
 local function scanContainer(position)
 	local corpse = Tile(position):getTopDownItem()
@@ -28,7 +28,6 @@ local function scanContainer(position)
 				local itemtype = ItemType(containerItem:getId())
 				if itemtype:isStackable() == false and
 						(isWeapon(containerItem.uid) or isArmor(containerItem.uid) or isBow(containerItem.uid) or isShield(containerItem.uid)) then
-
 					if math.random(1, chanceToBetterItem) == 1 then
 						containerItem:KOD_rollIAndSetItemAttributes()
 						position:sendMagicEffect(171)
@@ -44,7 +43,6 @@ function randomstats_loot.onKill(player, target)
 	if not target:isMonster() then
 		return true
 	end
-
 	addEvent(scanContainer, 100, target:getPosition())
 	return true
 end

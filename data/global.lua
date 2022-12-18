@@ -1,4 +1,23 @@
 math.randomseed(os.time())
+
+FEATURE = {
+	uniqueItems = {name = "Unique Items", enabled = true},
+}
+
+print("|------------------------------------------|")
+print("|                 FEATURES                 |")
+print("|------------------------------------------|")
+
+for index, value in pairs(FEATURE) do
+	local featureName = value.name
+	if value.enabled == true then
+		print("|> [x] " .. featureName .. " enabled")
+	else
+		print("|> [ ] " .. featureName .. " disabled")
+	end
+end
+print("|------------------------------------------|")
+
 dofile('data/lib/lib.lua')
 
 ropeSpots = {

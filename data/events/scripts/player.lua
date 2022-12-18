@@ -11,8 +11,9 @@ function Player:onLook(thing, position, distance)
 		description = EventCallback.onLook(self, thing, position, distance, description)
 	end
 	if thing:isItem() then
-		local itemAdditionalDescription = KOD_Attribute_onLook(thing)
-		description = description .. itemAdditionalDescription
+		if FEATURE.uniqueItems.enabled  == true then
+			description = description .. KOD_Attribute_onLook(thing)
+		end
 	end
 	self:sendTextMessage(MESSAGE_INFO_DESCR, description)
 end
@@ -31,8 +32,9 @@ function Player:onLookInTrade(partner, item, distance)
 		description = EventCallback.onLookInTrade(self, partner, item, distance, description)
 	end
 	if item:isItem() then
-		local itemAdditionalDescription = KOD_Attribute_onLook(item)
-		description = description .. itemAdditionalDescription
+		if FEATURE.uniqueItems.enabled  == true then
+			description = description .. KOD_Attribute_onLook(thing)
+		end
 	end
 	self:sendTextMessage(MESSAGE_INFO_DESCR, description)
 end
@@ -62,7 +64,6 @@ function Player:onItemMoved(item, count, fromPosition, toPosition, fromCylinder,
 	if EventCallback.onItemMoved then
 		EventCallback.onItemMoved(self, item, count, fromPosition, toPosition, fromCylinder, toCylinder)
 	end
-	KOD_Attribute_onItemMoved(item, self, fromPosition, toPosition)
 end
 
 function Player:onMoveCreature(creature, fromPosition, toPosition)
@@ -320,6 +321,13 @@ function Player:onWrapItem(item)
 end
 
 function Player:onInventoryUpdate(item, slot, equip)
+	if FEATURE.uniqueItems.enabled  == true then
+		if equip == true then
+			KOD_Attribute_onEquipItem(self, item, slot)
+		elseif equip == false then 
+			KOD_Attribute_onDeEquipItem(self, item, slot)
+		end
+	end
 	if EventCallback.onInventoryUpdate then
 		EventCallback.onInventoryUpdate(self, item, slot, equip)
 	end
