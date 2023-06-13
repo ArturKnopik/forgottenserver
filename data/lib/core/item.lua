@@ -440,6 +440,44 @@ do
 			descriptions[#descriptions + 1] = string.format("speed %+d", math.floor(abilities.speed / 2))
 		end
 
+		-- Spell modyficator -- UGLY!!!
+		for _, sm in ipairs(abilities.spellModyficator) do
+			local spellName = getSpellNameById(sm.spellId)
+			if spellName then
+				if sm.level ~= 0 or sm.magLevel ~= 0 or sm.manaCost ~= 0 or sm.cooldown ~= 0 then
+					local str = "reduced requirements for spell \"" .. spellName .. "\" {"
+					local isNotFisrt = false
+					if sm.level ~= 0 then
+						str = str .. "level by " .. sm.level
+						isNotFisrt = true
+					end
+					if sm.magLevel ~= 0 then
+						if isNotFisrt then
+							str = str .. ", "
+						end
+						isNotFisrt = true
+						str = str .. "magic level by " .. sm.magLevel
+					end
+					if sm.manaCost ~= 0 then
+						if isNotFisrt then
+							str = str .. ", "
+						end
+						isNotFisrt = true
+						str = str .. "mana cost by " .. sm.manaCost
+					end
+					if sm.cooldown ~= 0 then
+						if isNotFisrt then
+							str = str .. ", "
+						end
+						isNotFisrt = true
+						str = str .. "cooldown by " .. sm.cooldown ..  "s"
+					end
+					str = str .. "}"
+					descriptions[#descriptions + 1] = str
+				end
+			end
+		end
+
 		-- collecting attributes finished
 		-- build the output text
 		local response = {itemName}

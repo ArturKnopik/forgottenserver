@@ -14855,6 +14855,12 @@
 		<attribute key="absorbPercentFire" value="4" />
 		<attribute key="absorbPercentIce" value="-5" />
 		<attribute key="slotType" value="head" />
+		<attribute key="spellmodyficator" value="19">
+			<attribute key="level" value="60" />
+			<attribute key="magiclevel" value="30" />
+			<attribute key="manacost" value="600" />
+			<attribute key="cooldown" value="2" />
+		</attribute>
 	</item>
 	<item id="7901" article="a" name="lightning headband">
 		<attribute key="weight" value="1000" />

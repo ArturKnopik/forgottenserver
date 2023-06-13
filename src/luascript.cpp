@@ -1140,6 +1140,9 @@ void LuaScriptInterface::registerFunctions()
 	// isScriptsInterface()
 	lua_register(luaState, "isScriptsInterface", LuaScriptInterface::luaIsScriptsInterface);
 
+	// getSpellNameById(spellId)
+	lua_register(luaState, "getSpellNameById", LuaScriptInterface::luaGetSpellNameById);
+
 #ifndef LUAJIT_VERSION
 	// bit operations for Lua, based on bitlib project release 24
 	// bit.bnot, bit.band, bit.bor, bit.bxor, bit.lshift, bit.rshift
@@ -4080,6 +4083,23 @@ int LuaScriptInterface::luaIsScriptsInterface(lua_State* L)
 		reportErrorFunc(L, "EventCallback: can only be called inside (data/scripts/)");
 		pushBoolean(L, false);
 	}
+	return 1;
+}
+
+int LuaScriptInterface::luaGetSpellNameById(lua_State* L)
+{
+	// getSpellNameById(id)
+	uint32_t spellId = getNumber<uint32_t>(L, -1);
+	auto& instantSpell = g_spells->getInstantSpells();
+
+	for (auto spell : instantSpell) {
+		if (spell.second.getId() == spellId) {
+			pushString(L, spell.second.getName());
+			return 1;
+		}
+	}
+
+	lua_pushnil(L);
 	return 1;
 }
 
@@ -13089,6 +13109,22 @@ int LuaScriptInterface::luaItemTypeGetAbilities(lua_State* L)
 			lua_rawseti(L, -2, i + 1);
 		}
 		lua_setfield(L, -2, "reflectPercent");
+
+		// spell modyficator
+		lua_createtable(L, 0, abilities.spellModyficator.size());
+		auto& sm = abilities.spellModyficator;
+		size_t index = 0;
+		for (auto it = sm.begin(); it != sm.end(); it++) {
+			index++;
+			lua_createtable(L, 0, 5);
+			setField(L, "spellId", it->first);
+			setField(L, "level", it->second->level);
+			setField(L, "magLevel", it->second->magLevel);
+			setField(L, "manaCost", it->second->manaCost);
+			setField(L, "cooldown", it->second->cooldown);
+			lua_rawseti(L, -2, index);
+		}
+		lua_setfield(L, -2, "spellModyficator");
 	}
 	return 1;
 }

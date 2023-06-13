@@ -4725,6 +4725,33 @@ size_t Player::getMaxDepotItems() const
 	return g_config.getNumber(isPremium() ? ConfigManager::DEPOT_PREMIUM_LIMIT : ConfigManager::DEPOT_FREE_LIMIT);
 }
 
+void Player::addSpellModyficator(uint8_t spellId, uint32_t level, uint32_t magLevel, uint32_t manaCost, uint32_t cooldown)
+{
+	auto sm = spellModyficator.find(spellId);
+
+	if (sm != spellModyficator.end() && sm->second) {
+		sm->second->level += level;
+		sm->second->magLevel += magLevel;
+		sm->second->manaCost += manaCost;
+		sm->second->cooldown += (cooldown * 1000);
+	} else {
+		auto sm_ptr = std::make_shared<SpellModyficator>(level, magLevel, manaCost, cooldown * 1000);
+		spellModyficator.emplace(spellId, sm_ptr);
+	}
+}
+
+std::shared_ptr<SpellModyficator> Player::getSpellModyficator(uint8_t spellId)
+{
+	std::shared_ptr<SpellModyficator> sm_ptr = nullptr;
+
+	auto sm = spellModyficator.find(spellId);
+	if (sm != spellModyficator.end() && sm->second) {
+		sm_ptr = sm->second;
+	}
+
+	return sm_ptr;
+}
+
 std::forward_list<Condition*> Player::getMuteConditions() const
 {
 	std::forward_list<Condition*> muteConditions;

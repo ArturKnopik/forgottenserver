@@ -154,6 +154,7 @@ enum ItemParseAttributes_t
 	ITEM_PARSE_SUPPRESSDAZZLE,
 	ITEM_PARSE_SUPPRESSCURSE,
 	ITEM_PARSE_FIELD,
+	ITEM_PARSE_SPELLMODYFICATOR,
 	ITEM_PARSE_REPLACEABLE,
 	ITEM_PARSE_PARTNERDIRECTION,
 	ITEM_PARSE_LEVELDOOR,
@@ -217,6 +218,14 @@ enum ItemParseAttributes_t
 	ITEM_PARSE_SUPPLY,
 };
 
+struct SpellModyficator
+{
+	uint32_t level = 0;
+	uint32_t magLevel = 0;
+	uint32_t manaCost = 0;
+	uint32_t cooldown = 0;
+};
+
 struct Abilities
 {
 	uint32_t healthGain = 0;
@@ -254,6 +263,8 @@ struct Abilities
 	bool manaShield = false;
 	bool invisible = false;
 	bool regeneration = false;
+
+	std::map<uint32_t, std::shared_ptr<SpellModyficator>> spellModyficator;
 };
 
 class ItemType

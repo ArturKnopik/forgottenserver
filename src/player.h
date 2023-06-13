@@ -538,6 +538,9 @@ public:
 	size_t getMaxVIPEntries() const;
 	size_t getMaxDepotItems() const;
 
+	void addSpellModyficator(uint8_t spellId, uint32_t level, uint32_t magLevel, uint32_t manaCost, uint32_t cooldown);
+	std::shared_ptr<SpellModyficator> getSpellModyficator(uint8_t spellId);
+
 	// tile
 	// send methods
 	void sendAddTileItem(const Tile* tile, const Position& pos, const Item* item)
@@ -1181,6 +1184,8 @@ private:
 	std::forward_list<std::string> learnedInstantSpellList;
 	std::forward_list<Condition*>
 	    storedConditionList; // TODO: This variable is only temporarily used when logging in, get rid of it somehow
+
+	std::map<uint32_t, std::shared_ptr<SpellModyficator>> spellModyficator;
 
 	std::string name;
 	std::string guildNick;

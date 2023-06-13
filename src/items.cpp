@@ -175,6 +175,7 @@ const std::unordered_map<std::string, ItemParseAttributes_t> ItemParseAttributes
     {"suppressdazzle", ITEM_PARSE_SUPPRESSDAZZLE},
     {"suppresscurse", ITEM_PARSE_SUPPRESSCURSE},
     {"field", ITEM_PARSE_FIELD},
+    {"spellmodyficator", ITEM_PARSE_SPELLMODYFICATOR},
     {"replaceable", ITEM_PARSE_REPLACEABLE},
     {"partnerdirection", ITEM_PARSE_PARTNERDIRECTION},
     {"leveldoor", ITEM_PARSE_LEVELDOOR},
@@ -1676,6 +1677,53 @@ void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
 						}
 					}
 					break;
+				}
+
+				case ITEM_PARSE_SPELLMODYFICATOR: {
+					uint32_t spellId = pugi::cast<int16_t>(valueAttribute.value());
+					uint32_t modlevel = 0;
+					uint32_t modMagLevel = 0;
+					uint32_t modManaCost = 0;
+					uint32_t cooldown = 0;
+
+					for (auto subAttributeNode : attributeNode.children()) {
+						pugi::xml_attribute subKeyAttribute = subAttributeNode.attribute("key");
+						if (!subKeyAttribute) {
+							continue;
+						}
+
+						pugi::xml_attribute subValueAttribute = subAttributeNode.attribute("value");
+						if (!subValueAttribute) {
+							continue;
+						}
+
+						tmpStrValue = boost::algorithm::to_lower_copy<std::string>(subKeyAttribute.as_string());
+						if (tmpStrValue == "level") {
+							modlevel = pugi::cast<uint32_t>(subValueAttribute.value());
+						} else if (tmpStrValue == "magiclevel") {
+							modMagLevel = pugi::cast<uint32_t>(subValueAttribute.value());
+						} else if (tmpStrValue == "manacost") {
+							modManaCost = pugi::cast<uint32_t>(subValueAttribute.value());
+						} else if (tmpStrValue == "cooldown") {
+							cooldown = pugi::cast<uint32_t>(subValueAttribute.value());
+						}
+					}
+
+					// avoid adding to map item not changes anything
+					if (modlevel == 0 && modMagLevel == 0 && modManaCost == 0 && cooldown == 0) {
+						continue;
+					}
+
+					auto sm = abilities.spellModyficator.find(spellId);
+					if (sm != abilities.spellModyficator.end() && sm->second) {
+						sm->second->level += modlevel;
+						sm->second->magLevel += modMagLevel;
+						sm->second->manaCost += modManaCost;
+						sm->second->cooldown += cooldown;
+					} else {
+						auto sm_ptr = std::make_shared<SpellModyficator>(modlevel, modMagLevel, modManaCost, cooldown);
+						abilities.spellModyficator.emplace(spellId, sm_ptr);
+					}
 				}
 
 				case ITEM_PARSE_REPLACEABLE: {
