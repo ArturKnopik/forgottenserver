@@ -1681,10 +1681,8 @@ void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
 
 				case ITEM_PARSE_SPELLMODYFICATOR: {
 					uint32_t spellId = pugi::cast<int16_t>(valueAttribute.value());
-					uint32_t modlevel = 0;
-					uint32_t modMagLevel = 0;
-					uint32_t modManaCost = 0;
-					uint32_t cooldown = 0;
+
+					SpellModyficator spellMod(spellId);
 
 					for (auto subAttributeNode : attributeNode.children()) {
 						pugi::xml_attribute subKeyAttribute = subAttributeNode.attribute("key");
@@ -1699,30 +1697,29 @@ void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
 
 						tmpStrValue = boost::algorithm::to_lower_copy<std::string>(subKeyAttribute.as_string());
 						if (tmpStrValue == "level") {
-							modlevel = pugi::cast<uint32_t>(subValueAttribute.value());
+							spellMod.level = pugi::cast<uint32_t>(subValueAttribute.value());
 						} else if (tmpStrValue == "magiclevel") {
-							modMagLevel = pugi::cast<uint32_t>(subValueAttribute.value());
+							spellMod.magLevel = pugi::cast<uint32_t>(subValueAttribute.value());
 						} else if (tmpStrValue == "manacost") {
-							modManaCost = pugi::cast<uint32_t>(subValueAttribute.value());
+							spellMod.manaCost = pugi::cast<uint32_t>(subValueAttribute.value());
 						} else if (tmpStrValue == "cooldown") {
-							cooldown = pugi::cast<uint32_t>(subValueAttribute.value());
+							spellMod.cooldown = pugi::cast<uint32_t>(subValueAttribute.value());
+						} else if (tmpStrValue == "boostdamagepercent") {
+							spellMod.boostDamage = pugi::cast<uint32_t>(subValueAttribute.value());
 						}
 					}
 
 					// avoid adding to map item not changes anything
-					if (modlevel == 0 && modMagLevel == 0 && modManaCost == 0 && cooldown == 0) {
+					if (!isValidSpellModyficator(spellMod)) {
 						continue;
 					}
 
-					auto sm = abilities.spellModyficator.find(spellId);
-					if (sm != abilities.spellModyficator.end() && sm->second) {
-						sm->second->level += modlevel;
-						sm->second->magLevel += modMagLevel;
-						sm->second->manaCost += modManaCost;
-						sm->second->cooldown += cooldown;
+					auto sm = abilities.spellModifierMap.find(spellId);
+					if (sm != abilities.spellModifierMap.end()) {
+						sm->second + spellMod;
 					} else {
-						auto sm_ptr = std::make_shared<SpellModyficator>(modlevel, modMagLevel, modManaCost, cooldown);
-						abilities.spellModyficator.emplace(spellId, sm_ptr);
+						abilities.spellModifierMap.emplace(
+						    spellId, spellMod);
 					}
 				}
 

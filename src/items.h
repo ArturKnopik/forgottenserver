@@ -220,10 +220,56 @@ enum ItemParseAttributes_t
 
 struct SpellModyficator
 {
+	uint32_t spellId = 0;
 	uint32_t level = 0;
 	uint32_t magLevel = 0;
 	uint32_t manaCost = 0;
 	uint32_t cooldown = 0;
+	uint32_t boostDamage = 0;
+	SpellModyficator operator+(SpellModyficator const& rhs)
+	{
+		SpellModyficator spellMod;
+		if (spellId != rhs.spellId)
+		{
+			spellMod.spellId = spellId;
+			spellMod.level = level;
+			spellMod.magLevel = magLevel;
+			spellMod.manaCost = manaCost;
+			spellMod.cooldown = cooldown;
+			spellMod.boostDamage = boostDamage;
+		}
+		else
+		{
+			spellMod.spellId = spellId;
+			spellMod.level = level + rhs.level;
+			spellMod.magLevel = magLevel + rhs.magLevel;
+			spellMod.manaCost = manaCost + rhs.manaCost;
+			spellMod.cooldown = cooldown + rhs.cooldown;
+			spellMod.boostDamage = boostDamage + rhs.boostDamage;
+		}
+		return spellMod;
+	}
+
+	SpellModyficator operator-(SpellModyficator const& rhs)
+	{
+		SpellModyficator spellMod;
+		if (spellId != rhs.spellId) {
+			spellMod.spellId = spellId;
+			spellMod.level = level;
+			spellMod.magLevel = magLevel;
+			spellMod.manaCost = manaCost;
+			spellMod.cooldown = cooldown;
+			spellMod.boostDamage = boostDamage;
+		} else {
+			spellMod.spellId = spellId;
+			spellMod.level = level - rhs.level;
+			spellMod.magLevel = magLevel - rhs.magLevel;
+			spellMod.manaCost = manaCost - rhs.manaCost;
+			spellMod.cooldown = cooldown - rhs.cooldown;
+			spellMod.boostDamage = boostDamage - rhs.boostDamage;
+		}
+		return spellMod;
+	}
 };
 
 struct Abilities
@@ -264,7 +310,7 @@ struct Abilities
 	bool invisible = false;
 	bool regeneration = false;
 
-	std::map<uint32_t, std::shared_ptr<SpellModyficator>> spellModyficator;
+	std::map<uint32_t, SpellModyficator> spellModifierMap;
 };
 
 class ItemType

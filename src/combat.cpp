@@ -434,6 +434,11 @@ bool Combat::setParam(CombatParam_t param, uint32_t value)
 			params.useCharges = (value != 0);
 			return true;
 		}
+
+		case COMBAT_PARAM_SPELLID: {
+			params.spellId = static_cast<uint32_t>(value);
+			return true;
+		}
 	}
 	return false;
 }
@@ -470,6 +475,9 @@ int32_t Combat::getParam(CombatParam_t param)
 
 		case COMBAT_PARAM_USECHARGES:
 			return params.useCharges ? 1 : 0;
+
+		case COMBAT_PARAM_SPELLID:
+			return static_cast<int32_t>(params.spellId);
 
 		default:
 			return std::numeric_limits<int32_t>().max();
@@ -903,8 +911,16 @@ void Combat::doAreaCombat(Creature* caster, const Position& position, const Area
 	Player* casterPlayer = caster ? caster->getPlayer() : nullptr;
 	int32_t criticalPrimary = 0;
 	int32_t criticalSecondary = 0;
+
 	if (!damage.critical && damage.primary.type != COMBAT_HEALING && casterPlayer &&
 	    damage.origin != ORIGIN_CONDITION) {
+		auto spellMod = casterPlayer->getSpellModifier(params.spellId);
+		if (spellMod.spellId != 0)
+		{
+			damage.primary.value = (damage.primary.value * (100. + spellMod.boostDamage) / 100.);
+			damage.secondary.value = (damage.secondary.value * (100. + spellMod.boostDamage) / 100.);
+		}
+
 		uint16_t chance = casterPlayer->getSpecialSkill(SPECIALSKILL_CRITICALHITCHANCE);
 		uint16_t skill = casterPlayer->getSpecialSkill(SPECIALSKILL_CRITICALHITAMOUNT);
 		if (chance > 0 && skill > 0 && uniform_random(1, 100) <= chance) {

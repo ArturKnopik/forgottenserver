@@ -1238,6 +1238,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(COMBAT_PARAM_AGGRESSIVE);
 	registerEnum(COMBAT_PARAM_DISPEL);
 	registerEnum(COMBAT_PARAM_USECHARGES);
+	registerEnum(COMBAT_PARAM_SPELLID);
 
 	registerEnum(CONDITION_NONE);
 	registerEnum(CONDITION_POISON);
@@ -13111,20 +13112,21 @@ int LuaScriptInterface::luaItemTypeGetAbilities(lua_State* L)
 		lua_setfield(L, -2, "reflectPercent");
 
 		// spell modyficator
-		lua_createtable(L, 0, abilities.spellModyficator.size());
-		auto& sm = abilities.spellModyficator;
+		lua_createtable(L, 0, abilities.spellModifierMap.size());
+		auto& sm = abilities.spellModifierMap;
 		size_t index = 0;
 		for (auto it = sm.begin(); it != sm.end(); it++) {
 			index++;
 			lua_createtable(L, 0, 5);
 			setField(L, "spellId", it->first);
-			setField(L, "level", it->second->level);
-			setField(L, "magLevel", it->second->magLevel);
-			setField(L, "manaCost", it->second->manaCost);
-			setField(L, "cooldown", it->second->cooldown);
+			setField(L, "level", it->second.level);
+			setField(L, "magLevel", it->second.magLevel);
+			setField(L, "manaCost", it->second.manaCost);
+			setField(L, "cooldown", it->second.cooldown);
+			setField(L, "boostDamage", it->second.boostDamage);
 			lua_rawseti(L, -2, index);
 		}
-		lua_setfield(L, -2, "spellModyficator");
+		lua_setfield(L, -2, "spellModifier");
 	}
 	return 1;
 }
@@ -13622,7 +13624,8 @@ int LuaScriptInterface::luaCombatSetOrigin(lua_State* L)
 
 int LuaScriptInterface::luaCombatExecute(lua_State* L)
 {
-	// combat:execute(creature, variant)
+	// combat:execute(creature, variant, spellId)
+	uint32_t spellId = 0;
 	const Combat_ptr& combat = getSharedPtr<Combat>(L, 1);
 	if (!combat) {
 		reportErrorFunc(L, getErrorDesc(LUA_ERROR_COMBAT_NOT_FOUND));
@@ -13636,6 +13639,11 @@ int LuaScriptInterface::luaCombatExecute(lua_State* L)
 			pushBoolean(L, false);
 			return 1;
 		}
+	}
+
+	spellId = getNumber<int32_t>(L, 4);
+	if (spellId != 0) {
+		combat->setParam(COMBAT_PARAM_SPELLID, spellId);
 	}
 
 	Creature* creature = getCreature(L, 2);

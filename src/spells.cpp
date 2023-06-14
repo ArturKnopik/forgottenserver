@@ -18,8 +18,6 @@ extern Monsters g_monsters;
 extern ConfigManager g_config;
 extern LuaEnvironment g_luaEnvironment;
 
-constexpr uint32_t MIN_COOLDOWN_TIME = 1000;
-
 Spells::Spells() { scriptInterface.initState(); }
 
 Spells::~Spells() { clear(false); }
@@ -663,13 +661,7 @@ bool Spell::playerInstantSpellCheck(Player* player, const Position& toPos)
 
 bool Spell::playerRuneSpellCheck(Player* player, const Position& toPos)
 {
-	SpellModyficator spellMod;
-	auto spellMod_ptr = player->getSpellModyficator(spellId);
-	if (spellMod_ptr) {
-		spellMod.level = spellMod_ptr->level;
-		spellMod.magLevel = spellMod_ptr->magLevel;
-		spellMod.manaCost = spellMod_ptr->manaCost;
-	}
+	SpellModyficator spellMod = player->getSpellModifier(spellId);
 
 	if (!playerSpellCheck(player, spellMod)) {
 		return false;
@@ -739,36 +731,37 @@ bool Spell::playerRuneSpellCheck(Player* player, const Position& toPos)
 	return true;
 }
 
-void Spell::postCastSpell(Player* player, SpellModyficator& spellModyficator, bool finishedCast /*= true*/,
+void Spell::postCastSpell(Player* player, SpellModyficator& spellModifier, bool finishedCast /*= true*/,
                           bool payCost /*= true*/) const
 {
 	if (finishedCast) {
 		if (!player->hasFlag(PlayerFlag_HasNoExhaustion)) {
 			if (cooldown > 0) {
-				Condition* condition = Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLCOOLDOWN,
-				    std::max(MIN_COOLDOWN_TIME,
-				             cooldown < spellModyficator.cooldown ? 0 : cooldown - spellModyficator.cooldown),
+				Condition* condition = Condition::createCondition(
+				    CONDITIONID_DEFAULT, CONDITION_SPELLCOOLDOWN,
+				    std::max(getSpellMinimumCooldown(getAggressive()),
+				             cooldown < spellModifier.cooldown ? 0 : cooldown - spellModifier.cooldown),
 				    0, false, spellId);
 				player->addCondition(condition);
 			}
 
 			if (groupCooldown > 0) {
-				Condition* condition = Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLGROUPCOOLDOWN,
-				    std::max(MIN_COOLDOWN_TIME,
-				             groupCooldown < spellModyficator.cooldown ? 0 : groupCooldown - spellModyficator.cooldown),
-				    0, false,
-				    group);
+				Condition* condition = Condition::createCondition(
+				    CONDITIONID_DEFAULT, CONDITION_SPELLGROUPCOOLDOWN,
+				    std::max(getSpellMinimumCooldown(getAggressive()),
+				             groupCooldown < spellModifier.cooldown ? 0 : groupCooldown - spellModifier.cooldown),
+				    0, false, group);
 				player->addCondition(condition);
 			}
 
 			if (secondaryGroupCooldown > 0) {
-				Condition* condition = Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLGROUPCOOLDOWN,
-				    std::max(MIN_COOLDOWN_TIME, secondaryGroupCooldown < spellModyficator.cooldown
-				                                    ? 0
-				                                    : secondaryGroupCooldown - spellModyficator.cooldown),
-				                               0,
-				    false,
-				    secondaryGroup);
+				Condition* condition =
+				    Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLGROUPCOOLDOWN,
+				                               std::max(getSpellMinimumCooldown(getAggressive()),
+				                                        secondaryGroupCooldown < spellModifier.cooldown
+				                                            ? 0
+				                                            : secondaryGroupCooldown - spellModifier.cooldown),
+				                               0, false, secondaryGroup);
 				player->addCondition(condition);
 			}
 		}
@@ -780,8 +773,7 @@ void Spell::postCastSpell(Player* player, SpellModyficator& spellModyficator, bo
 
 	if (payCost) {
 		Spell::postCastSpell(
-		    player,
-		    spellModyficator.manaCost > getManaCost(player) ? 0 : getManaCost(player) - spellModyficator.manaCost,
+		    player, spellModifier.manaCost > getManaCost(player) ? 0 : getManaCost(player) - spellModifier.manaCost,
 		    getSoulCost());
 	}
 }
@@ -850,14 +842,7 @@ bool InstantSpell::configureEvent(const pugi::xml_node& node)
 
 bool InstantSpell::playerCastInstant(Player* player, std::string& param)
 {
-	SpellModyficator spellMod;
-	auto spellMod_ptr = player->getSpellModyficator(spellId);
-	if (spellMod_ptr) {
-		spellMod.level = spellMod_ptr->level;
-		spellMod.magLevel = spellMod_ptr->magLevel;
-		spellMod.manaCost = spellMod_ptr->manaCost;
-		spellMod.cooldown = spellMod_ptr->cooldown;
-	}
+	SpellModyficator spellMod = player->getSpellModifier(spellId);
 
 	if (!playerSpellCheck(player, spellMod)) {
 		return false;
@@ -883,17 +868,18 @@ bool InstantSpell::playerCastInstant(Player* player, std::string& param)
 			if (!target || target->isRemoved() || target->isDead()) {
 				if (!casterTargetOrDirection) {
 					if (cooldown > 0) {
-						Condition* condition = Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLCOOLDOWN,
-						    std::max(MIN_COOLDOWN_TIME,
+						Condition* condition = Condition::createCondition(
+						    CONDITIONID_DEFAULT, CONDITION_SPELLCOOLDOWN,
+						    std::max(getSpellMinimumCooldown(getAggressive()),
 						             cooldown < spellMod.cooldown ? 0 : cooldown - spellMod.cooldown),
-						    0, false,
-						    spellId);
+						    0, false, spellId);
 						player->addCondition(condition);
 					}
 
 					if (groupCooldown > 0) {
-						Condition* condition = Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLGROUPCOOLDOWN,
-						    std::max(MIN_COOLDOWN_TIME,
+						Condition* condition = Condition::createCondition(
+						    CONDITIONID_DEFAULT, CONDITION_SPELLGROUPCOOLDOWN,
+						    std::max(getSpellMinimumCooldown(getAggressive()),
 						             groupCooldown < spellMod.cooldown ? 0 : groupCooldown - spellMod.cooldown),
 						    0, false, group);
 						player->addCondition(condition);
@@ -902,12 +888,11 @@ bool InstantSpell::playerCastInstant(Player* player, std::string& param)
 					if (secondaryGroupCooldown > 0) {
 						Condition* condition =
 						    Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLGROUPCOOLDOWN,
-						    std::max(MIN_COOLDOWN_TIME, secondaryGroupCooldown < spellMod.cooldown
-						                                    ? 0
-						                                    : secondaryGroupCooldown - spellMod.cooldown),
-						    0,
-						    false,
-						    secondaryGroup);
+						                               std::max(getSpellMinimumCooldown(getAggressive()),
+						                                        secondaryGroupCooldown < spellMod.cooldown
+						                                            ? 0
+						                                            : secondaryGroupCooldown - spellMod.cooldown),
+						                               0, false, secondaryGroup);
 						player->addCondition(condition);
 					}
 
@@ -957,30 +942,31 @@ bool InstantSpell::playerCastInstant(Player* player, std::string& param)
 
 			if (ret != RETURNVALUE_NOERROR) {
 				if (cooldown > 0) {
-					Condition* condition = Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLCOOLDOWN,
-					    std::max(MIN_COOLDOWN_TIME,
+					Condition* condition = Condition::createCondition(
+					    CONDITIONID_DEFAULT, CONDITION_SPELLCOOLDOWN,
+					    std::max(getSpellMinimumCooldown(getAggressive()),
 					             cooldown < spellMod.cooldown ? 0 : cooldown - spellMod.cooldown),
 					    0, false, spellId);
 					player->addCondition(condition);
 				}
 
 				if (groupCooldown > 0) {
-					Condition* condition = Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLGROUPCOOLDOWN,
-					    std::max(MIN_COOLDOWN_TIME,
+					Condition* condition = Condition::createCondition(
+					    CONDITIONID_DEFAULT, CONDITION_SPELLGROUPCOOLDOWN,
+					    std::max(getSpellMinimumCooldown(getAggressive()),
 					             groupCooldown < spellMod.cooldown ? 0 : groupCooldown - spellMod.cooldown),
-					    0,
-					    false, group);
+					    0, false, group);
 					player->addCondition(condition);
 				}
 
 				if (secondaryGroupCooldown > 0) {
-					Condition* condition = Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLGROUPCOOLDOWN,
-					    std::max(MIN_COOLDOWN_TIME, secondaryGroupCooldown < spellMod.cooldown
-					                                    ? 0
-					                                    : secondaryGroupCooldown - spellMod.cooldown),
-					    0,
-					    false,
-					    secondaryGroup);
+					Condition* condition =
+					    Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLGROUPCOOLDOWN,
+					                               std::max(getSpellMinimumCooldown(getAggressive()),
+					                                        secondaryGroupCooldown < spellMod.cooldown
+					                                            ? 0
+					                                            : secondaryGroupCooldown - spellMod.cooldown),
+					                               0, false, secondaryGroup);
 					player->addCondition(condition);
 				}
 

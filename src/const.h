@@ -8,6 +8,9 @@ static constexpr int32_t NETWORKMESSAGE_MAXSIZE = 24590;
 static constexpr int32_t MIN_MARKET_FEE = 20;
 static constexpr int32_t MAX_MARKET_FEE = 100000;
 
+constexpr uint32_t MIN_COOLDOWN_TIME_OTHER = 1000;
+constexpr uint32_t MIN_COOLDOWN_TIME_AGGRESIVE = 2000;
+
 enum MagicEffectsType_t : uint8_t
 {
 	MAGIC_EFFECTS_END_LOOP = 0,              // ends the magic effect loop

@@ -4725,31 +4725,39 @@ size_t Player::getMaxDepotItems() const
 	return g_config.getNumber(isPremium() ? ConfigManager::DEPOT_PREMIUM_LIMIT : ConfigManager::DEPOT_FREE_LIMIT);
 }
 
-void Player::addSpellModyficator(uint8_t spellId, uint32_t level, uint32_t magLevel, uint32_t manaCost, uint32_t cooldown)
+void Player::addSpellModifier(SpellModyficator spellModifier)
 {
-	auto sm = spellModyficator.find(spellId);
+	auto sm = spellModifierMap.find(spellModifier.spellId);
 
-	if (sm != spellModyficator.end() && sm->second) {
-		sm->second->level += level;
-		sm->second->magLevel += magLevel;
-		sm->second->manaCost += manaCost;
-		sm->second->cooldown += (cooldown * 1000);
+	if (sm != spellModifierMap.end()) {
+		sm->second = sm->second + spellModifier;
 	} else {
-		auto sm_ptr = std::make_shared<SpellModyficator>(level, magLevel, manaCost, cooldown * 1000);
-		spellModyficator.emplace(spellId, sm_ptr);
+		spellModifierMap.emplace(spellModifier.spellId, spellModifier);
 	}
 }
 
-std::shared_ptr<SpellModyficator> Player::getSpellModyficator(uint8_t spellId)
+void Player::removeSpellModifier(SpellModyficator spellModifier)
 {
-	std::shared_ptr<SpellModyficator> sm_ptr = nullptr;
+	auto sm = spellModifierMap.find(spellModifier.spellId);
 
-	auto sm = spellModyficator.find(spellId);
-	if (sm != spellModyficator.end() && sm->second) {
-		sm_ptr = sm->second;
+	if (sm != spellModifierMap.end()) {
+		sm->second = sm->second - spellModifier;
+	}
+}
+
+SpellModyficator Player::getSpellModifier(uint8_t spellId)
+{
+	if (spellId == 0)
+	{
+		return SpellModyficator();
 	}
 
-	return sm_ptr;
+	auto sm = spellModifierMap.find(spellId);
+	if (sm != spellModifierMap.end()) {
+		return sm->second;
+	}
+
+	return SpellModyficator();
 }
 
 std::forward_list<Condition*> Player::getMuteConditions() const

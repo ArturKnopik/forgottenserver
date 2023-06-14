@@ -828,13 +828,9 @@ ReturnValue MoveEvent::EquipItem(MoveEvent* moveEvent, Player* player, Item* ite
 		}
 	}
 
-	auto& spellModMap = it.abilities->spellModyficator;
+	auto& spellModMap = it.abilities->spellModifierMap;
 	for (auto it = spellModMap.begin(); it != spellModMap.end(); it++) {
-		uint32_t spellId = it->first;
-		if (it->second) {
-			player->addSpellModyficator(it->first, it->second->level, it->second->magLevel, it->second->manaCost,
-			                            it->second->cooldown);
-		}
+		player->addSpellModifier(it->second);
 	}
 
 	if (needUpdateStats) {
@@ -928,13 +924,9 @@ ReturnValue MoveEvent::DeEquipItem(MoveEvent*, Player* player, Item* item, slots
 		}
 	}
 
-	auto& spellModMap = it.abilities->spellModyficator;
+	auto& spellModMap = it.abilities->spellModifierMap;
 	for (auto it = spellModMap.begin(); it != spellModMap.end(); it++) {
-		uint32_t spellId = it->first;
-		if (it->second) {
-			player->addSpellModyficator(it->first, -it->second->level, -it->second->magLevel, -it->second->manaCost,
-			                            -it->second->cooldown);
-		}
+		player->removeSpellModifier(it->second);
 	}
 
 	if (needUpdateStats) {

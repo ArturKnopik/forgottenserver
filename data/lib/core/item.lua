@@ -441,10 +441,10 @@ do
 		end
 
 		-- Spell modyficator -- UGLY!!!
-		for _, sm in ipairs(abilities.spellModyficator) do
+		for _, sm in ipairs(abilities.spellModifier) do
 			local spellName = getSpellNameById(sm.spellId)
 			if spellName then
-				if sm.level ~= 0 or sm.magLevel ~= 0 or sm.manaCost ~= 0 or sm.cooldown ~= 0 then
+				if sm.level ~= 0 or sm.magLevel ~= 0 or sm.manaCost ~= 0 or sm.cooldown ~= 0 or sm.boostDamage ~= 0 then
 					local str = "reduced requirements for spell \"" .. spellName .. "\" {"
 					local isNotFisrt = false
 					if sm.level ~= 0 then
@@ -470,7 +470,14 @@ do
 							str = str .. ", "
 						end
 						isNotFisrt = true
-						str = str .. "cooldown by " .. sm.cooldown ..  "s"
+						str = str .. "cooldown by " .. sm.cooldown/1000 ..  "s"
+					end
+					if sm.boostDamage ~= 0 then
+						if isNotFisrt then
+							str = str .. ", "
+						end
+						isNotFisrt = true
+						str = str .. "boost damage by " .. sm.boostDamage..  "%"
 					end
 					str = str .. "}"
 					descriptions[#descriptions + 1] = str
