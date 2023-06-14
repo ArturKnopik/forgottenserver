@@ -14859,7 +14859,7 @@
 			<attribute key="level" value="60" />
 			<attribute key="magiclevel" value="30" />
 			<attribute key="manacost" value="600" />
-			<attribute key="cooldown" value="2000" />
+			<attribute key="cooldown" value="1000" />
 			<attribute key="boostdamagepercent" value="100" />
 		</attribute>
 	</item>

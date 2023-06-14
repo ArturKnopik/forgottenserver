@@ -5,6 +5,7 @@
 #define FS_CONDITION_H
 
 #include "enums.h"
+#include "spells.h"
 
 class Creature;
 class Player;
@@ -165,6 +166,7 @@ private:
 	int32_t currentSkill = 0;
 	int32_t currentSpecialSkill = 0;
 	int32_t currentStat = 0;
+	SpellModifie spellModifie;
 
 	bool disableDefense = false;
 

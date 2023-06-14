@@ -270,6 +270,17 @@ struct SpellModifie
 		}
 		return spellMod;
 	}
+
+	SpellModifie& operator=(const SpellModifie& rhs)
+	{
+		spellId = spellId;
+		level = rhs.level;
+		magLevel = rhs.magLevel;
+		manaCost = rhs.manaCost;
+		cooldown = rhs.cooldown;
+		boostDamage = rhs.boostDamage;
+		return *this;
+	}
 };
 
 struct Abilities
