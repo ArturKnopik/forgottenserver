@@ -538,9 +538,9 @@ public:
 	size_t getMaxVIPEntries() const;
 	size_t getMaxDepotItems() const;
 
-	void addSpellModifier(SpellModyficator spellModifier);
-	void removeSpellModifier(SpellModyficator spellModifier);
-	SpellModyficator getSpellModifier(uint8_t spellId);
+	void addSpellModifier(SpellModifie spellModifier);
+	void removeSpellModifier(SpellModifie spellModifier);
+	SpellModifie getSpellModifier(uint8_t spellId);
 
 	// tile
 	// send methods
@@ -1186,7 +1186,7 @@ private:
 	std::forward_list<Condition*>
 	    storedConditionList; // TODO: This variable is only temporarily used when logging in, get rid of it somehow
 
-	std::map<uint32_t, SpellModyficator> spellModifierMap;
+	std::map<uint32_t, SpellModifie> spellModifierMap;
 
 	std::string name;
 	std::string guildNick;

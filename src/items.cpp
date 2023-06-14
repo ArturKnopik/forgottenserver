@@ -1682,7 +1682,7 @@ void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
 				case ITEM_PARSE_SPELLMODYFICATOR: {
 					uint32_t spellId = pugi::cast<int16_t>(valueAttribute.value());
 
-					SpellModyficator spellMod(spellId);
+					SpellModifie spellMod(spellId);
 
 					for (auto subAttributeNode : attributeNode.children()) {
 						pugi::xml_attribute subKeyAttribute = subAttributeNode.attribute("key");

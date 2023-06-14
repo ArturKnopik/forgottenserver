@@ -515,7 +515,7 @@ bool Spell::configureSpell(const pugi::xml_node& node)
 	return true;
 }
 
-bool Spell::playerSpellCheck(Player* player, SpellModyficator& spellModificator) const
+bool Spell::playerSpellCheck(Player* player, SpellModifie& spellModificator) const
 {
 	if (player->hasFlag(PlayerFlag_CannotUseSpells)) {
 		return false;
@@ -661,7 +661,7 @@ bool Spell::playerInstantSpellCheck(Player* player, const Position& toPos)
 
 bool Spell::playerRuneSpellCheck(Player* player, const Position& toPos)
 {
-	SpellModyficator spellMod = player->getSpellModifier(spellId);
+	SpellModifie spellMod = player->getSpellModifier(spellId);
 
 	if (!playerSpellCheck(player, spellMod)) {
 		return false;
@@ -731,7 +731,7 @@ bool Spell::playerRuneSpellCheck(Player* player, const Position& toPos)
 	return true;
 }
 
-void Spell::postCastSpell(Player* player, SpellModyficator& spellModifier, bool finishedCast /*= true*/,
+void Spell::postCastSpell(Player* player, SpellModifie& spellModifier, bool finishedCast /*= true*/,
                           bool payCost /*= true*/) const
 {
 	if (finishedCast) {
@@ -842,7 +842,7 @@ bool InstantSpell::configureEvent(const pugi::xml_node& node)
 
 bool InstantSpell::playerCastInstant(Player* player, std::string& param)
 {
-	SpellModyficator spellMod = player->getSpellModifier(spellId);
+	SpellModifie spellMod = player->getSpellModifier(spellId);
 
 	if (!playerSpellCheck(player, spellMod)) {
 		return false;
@@ -1192,7 +1192,7 @@ bool RuneSpell::executeUse(Player* player, Item* item, const Position&, Thing* t
 		return false;
 	}
 
-	SpellModyficator sm;
+	SpellModifie sm;
 	postCastSpell(player, sm);
 
 	if (var.isNumber()) {

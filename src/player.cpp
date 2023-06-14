@@ -4725,7 +4725,7 @@ size_t Player::getMaxDepotItems() const
 	return g_config.getNumber(isPremium() ? ConfigManager::DEPOT_PREMIUM_LIMIT : ConfigManager::DEPOT_FREE_LIMIT);
 }
 
-void Player::addSpellModifier(SpellModyficator spellModifier)
+void Player::addSpellModifier(SpellModifie spellModifier)
 {
 	auto sm = spellModifierMap.find(spellModifier.spellId);
 
@@ -4736,7 +4736,7 @@ void Player::addSpellModifier(SpellModyficator spellModifier)
 	}
 }
 
-void Player::removeSpellModifier(SpellModyficator spellModifier)
+void Player::removeSpellModifier(SpellModifie spellModifier)
 {
 	auto sm = spellModifierMap.find(spellModifier.spellId);
 
@@ -4745,11 +4745,11 @@ void Player::removeSpellModifier(SpellModyficator spellModifier)
 	}
 }
 
-SpellModyficator Player::getSpellModifier(uint8_t spellId)
+SpellModifie Player::getSpellModifier(uint8_t spellId)
 {
 	if (spellId == 0)
 	{
-		return SpellModyficator();
+		return SpellModifie();
 	}
 
 	auto sm = spellModifierMap.find(spellId);
@@ -4757,7 +4757,7 @@ SpellModyficator Player::getSpellModifier(uint8_t spellId)
 		return sm->second;
 	}
 
-	return SpellModyficator();
+	return SpellModifie();
 }
 
 std::forward_list<Condition*> Player::getMuteConditions() const
