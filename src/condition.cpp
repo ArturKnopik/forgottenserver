@@ -389,7 +389,7 @@ void ConditionAttributes::addCondition(Creature* creature, const Condition* cond
 		memcpy(skillsPercent, conditionAttrs.skillsPercent, sizeof(skillsPercent));
 		memcpy(stats, conditionAttrs.stats, sizeof(stats));
 		memcpy(statsPercent, conditionAttrs.statsPercent, sizeof(statsPercent));
-		spellModifie = conditionAttrs.spellModifie;
+		spellModifier = conditionAttrs.spellModifier;
 		disableDefense = conditionAttrs.disableDefense;
 
 		if (Player* player = creature->getPlayer()) {
@@ -397,7 +397,7 @@ void ConditionAttributes::addCondition(Creature* creature, const Condition* cond
 			updateSkills(player);
 			updatePercentStats(player);
 			updateStats(player);
-			player->addSpellModifier(spellModifie);
+			player->addSpellModifier(spellModifier);
 		}
 	}
 }
@@ -452,7 +452,7 @@ bool ConditionAttributes::startCondition(Creature* creature)
 		updateSkills(player);
 		updatePercentStats(player);
 		updateStats(player);
-		player->addSpellModifier(spellModifie);
+		player->addSpellModifier(spellModifier);
 	}
 
 	return true;
@@ -571,7 +571,7 @@ void ConditionAttributes::endCondition(Creature* creature)
 			}
 		}
 
-		player->removeSpellModifier(spellModifie);
+		player->removeSpellModifier(spellModifier);
 
 		if (needUpdateStats) {
 			player->sendStats();
@@ -744,31 +744,31 @@ bool ConditionAttributes::setParam(ConditionParam_t param, int32_t value)
 		}
 
 		case CONDITION_PARAM_SELLMODIFIER_ID: {
-			spellModifie.spellId = value;
+			spellModifier.spellId = value;
 			return true;
 		}
 
 		case CONDITION_PARAM_SELLMODIFIER_LEVEL: {
-			spellModifie.level = value;
+			spellModifier.level = value;
 			return true;
 		}
 
 		case CONDITION_PARAM_SELLMODIFIER_MAGICLEVEL: {
-			spellModifie.magLevel = value;
+			spellModifier.magLevel = value;
 			return true;
 		}
 		case CONDITION_PARAM_SELLMODIFIER_MANACOST: {
-			spellModifie.manaCost = value;
+			spellModifier.manaCost = value;
 			return true;
 		}
 
 		case CONDITION_PARAM_SELLMODIFIER_COOLDOWN: {
-			spellModifie.cooldown = value;
+			spellModifier.cooldown = value;
 			return true;
 		}
 
 		case CONDITION_PARAM_SELLMODIFIER_BOOSTDAMAGE: {
-			spellModifie.boostDamage = value;
+			spellModifier.boostDamage = value;
 			return true;
 		}
 
@@ -862,25 +862,25 @@ int32_t ConditionAttributes::getParam(ConditionParam_t param)
 			return specialSkills[SPECIALSKILL_MANALEECHAMOUNT];
 
 		case CONDITION_PARAM_SELLMODIFIER_ID: {
-			return spellModifie.spellId;
+			return spellModifier.spellId;
 		}
 
 		case CONDITION_PARAM_SELLMODIFIER_LEVEL: {
-			return spellModifie.level;
+			return spellModifier.level;
 		}
 
 		case CONDITION_PARAM_SELLMODIFIER_MAGICLEVEL: {
-			return spellModifie.magLevel;
+			return spellModifier.magLevel;
 		}
 		case CONDITION_PARAM_SELLMODIFIER_MANACOST: {
-			return spellModifie.manaCost;
+			return spellModifier.manaCost;
 		}
 		case CONDITION_PARAM_SELLMODIFIER_COOLDOWN: {
-			return spellModifie.cooldown;
+			return spellModifier.cooldown;
 		}
 
 		case CONDITION_PARAM_SELLMODIFIER_BOOSTDAMAGE: {
-			return spellModifie.boostDamage;
+			return spellModifier.boostDamage;
 		}
 
 		default:

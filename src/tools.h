@@ -8,7 +8,7 @@
 #include "enums.h"
 #include "position.h"
 
-struct SpellModifie;
+struct SpellModifier;
 
 void printXMLError(const std::string& where, const std::string& fileName, const pugi::xml_parse_result& result);
 
@@ -75,6 +75,7 @@ int64_t OTSYS_TIME();
 SpellGroup_t stringToSpellGroup(const std::string& value);
 
 uint32_t getSpellMinimumCooldown(bool isAggressive);
-bool isValidSpellModyficator(SpellModifie& spellModyficator);
+
+bool isValidSpellModyficator(SpellModifier& spellModifier);
 
 #endif // FS_TOOLS_H

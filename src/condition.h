@@ -166,7 +166,7 @@ private:
 	int32_t currentSkill = 0;
 	int32_t currentSpecialSkill = 0;
 	int32_t currentStat = 0;
-	SpellModifie spellModifie;
+	SpellModifier spellModifier;
 
 	bool disableDefense = false;
 

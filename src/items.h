@@ -218,7 +218,7 @@ enum ItemParseAttributes_t
 	ITEM_PARSE_SUPPLY,
 };
 
-struct SpellModifie
+struct SpellModifier
 {
 	uint32_t spellId = 0;
 	uint32_t level = 0;
@@ -226,9 +226,9 @@ struct SpellModifie
 	uint32_t manaCost = 0;
 	uint32_t cooldown = 0;
 	uint32_t boostDamage = 0;
-	SpellModifie operator+(SpellModifie const& rhs)
+	SpellModifier operator+(SpellModifier const& rhs)
 	{
-		SpellModifie spellMod;
+		SpellModifier spellMod;
 		if (spellId != rhs.spellId)
 		{
 			spellMod.spellId = spellId;
@@ -250,9 +250,9 @@ struct SpellModifie
 		return spellMod;
 	}
 
-	SpellModifie operator-(SpellModifie const& rhs)
+	SpellModifier operator-(SpellModifier const& rhs)
 	{
-		SpellModifie spellMod;
+		SpellModifier spellMod;
 		if (spellId != rhs.spellId) {
 			spellMod.spellId = spellId;
 			spellMod.level = level;
@@ -271,7 +271,7 @@ struct SpellModifie
 		return spellMod;
 	}
 
-	SpellModifie& operator=(const SpellModifie& rhs)
+	SpellModifier& operator=(const SpellModifier& rhs)
 	{
 		spellId = spellId;
 		level = rhs.level;
@@ -321,7 +321,7 @@ struct Abilities
 	bool invisible = false;
 	bool regeneration = false;
 
-	std::map<uint32_t, SpellModifie> spellModifierMap;
+	std::map<uint32_t, SpellModifier> spellModifierMap;
 };
 
 class ItemType

@@ -110,7 +110,7 @@ public:
 	uint8_t getId() const { return spellId; }
 	void setId(uint8_t id) { spellId = id; }
 
-	void postCastSpell(Player* player, SpellModifie& spellModifier, bool finishedCast = true,
+	void postCastSpell(Player* player, SpellModifier& spellModifier, bool finishedCast = true,
 	                   bool payCost = true) const;
 	static void postCastSpell(Player* player, uint32_t manaCost, uint32_t soulCost);
 
@@ -182,7 +182,7 @@ public:
 	SpellType_t spellType = SPELL_UNDEFINED;
 
 protected:
-	bool playerSpellCheck(Player* player, SpellModifie& spellModifier) const;
+	bool playerSpellCheck(Player* player, SpellModifier& spellModifier) const;
 	bool playerInstantSpellCheck(Player* player, const Position& toPos);
 	bool playerRuneSpellCheck(Player* player, const Position& toPos);
 
