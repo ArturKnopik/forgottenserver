@@ -6,6 +6,7 @@
 #include "tools.h"
 
 #include "configmanager.h"
+#include "spells.h"
 
 #include <chrono>
 #include <fmt/chrono.h>
@@ -1253,4 +1254,18 @@ SpellGroup_t stringToSpellGroup(const std::string& value)
 	}
 
 	return SPELLGROUP_NONE;
+}
+
+uint32_t getSpellMinimumCooldown(bool isAggressive)
+{
+	return isAggressive ? MIN_COOLDOWN_TIME_AGGRESIVE : MIN_COOLDOWN_TIME_OTHER;
+}
+
+bool isValidSpellModyficator(SpellModifier& spellModifier)
+{
+	if (spellModifier.level == 0 && spellModifier.magLevel == 0 && spellModifier.manaCost == 0 &&
+	    spellModifier.cooldown == 0 && spellModifier.boostDamage == 0) {
+		return false;
+	}
+	return true;
 }

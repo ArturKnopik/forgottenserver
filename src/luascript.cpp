@@ -1140,6 +1140,9 @@ void LuaScriptInterface::registerFunctions()
 	// isScriptsInterface()
 	lua_register(luaState, "isScriptsInterface", LuaScriptInterface::luaIsScriptsInterface);
 
+	// getSpellNameById(spellId)
+	lua_register(luaState, "getSpellNameById", LuaScriptInterface::luaGetSpellNameById);
+
 #ifndef LUAJIT_VERSION
 	// bit operations for Lua, based on bitlib project release 24
 	// bit.bnot, bit.band, bit.bor, bit.bxor, bit.lshift, bit.rshift
@@ -1235,6 +1238,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(COMBAT_PARAM_AGGRESSIVE);
 	registerEnum(COMBAT_PARAM_DISPEL);
 	registerEnum(COMBAT_PARAM_USECHARGES);
+	registerEnum(COMBAT_PARAM_SPELLID);
 
 	registerEnum(CONDITION_NONE);
 	registerEnum(CONDITION_POISON);
@@ -1334,6 +1338,13 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(CONDITION_PARAM_SPECIALSKILL_MANALEECHCHANCE);
 	registerEnum(CONDITION_PARAM_SPECIALSKILL_MANALEECHAMOUNT);
 	registerEnum(CONDITION_PARAM_AGGRESSIVE);
+
+	registerEnum(CONDITION_PARAM_SELLMODIFIER_ID);
+	registerEnum(CONDITION_PARAM_SELLMODIFIER_LEVEL);
+	registerEnum(CONDITION_PARAM_SELLMODIFIER_MAGICLEVEL);
+	registerEnum(CONDITION_PARAM_SELLMODIFIER_MANACOST);
+	registerEnum(CONDITION_PARAM_SELLMODIFIER_COOLDOWN);
+	registerEnum(CONDITION_PARAM_SELLMODIFIER_BOOSTDAMAGE);
 
 	registerEnum(CONST_ME_NONE);
 	registerEnum(CONST_ME_DRAWBLOOD);
@@ -4080,6 +4091,23 @@ int LuaScriptInterface::luaIsScriptsInterface(lua_State* L)
 		reportErrorFunc(L, "EventCallback: can only be called inside (data/scripts/)");
 		pushBoolean(L, false);
 	}
+	return 1;
+}
+
+int LuaScriptInterface::luaGetSpellNameById(lua_State* L)
+{
+	// getSpellNameById(id)
+	uint32_t spellId = getNumber<uint32_t>(L, -1);
+	auto& instantSpell = g_spells->getInstantSpells();
+
+	for (auto spell : instantSpell) {
+		if (spell.second.getId() == spellId) {
+			pushString(L, spell.second.getName());
+			return 1;
+		}
+	}
+
+	lua_pushnil(L);
 	return 1;
 }
 
@@ -13089,6 +13117,23 @@ int LuaScriptInterface::luaItemTypeGetAbilities(lua_State* L)
 			lua_rawseti(L, -2, i + 1);
 		}
 		lua_setfield(L, -2, "reflectPercent");
+
+		// spell modyficator
+		lua_createtable(L, 0, abilities.spellModifierMap.size());
+		auto& sm = abilities.spellModifierMap;
+		size_t index = 0;
+		for (auto it = sm.begin(); it != sm.end(); it++) {
+			index++;
+			lua_createtable(L, 0, 5);
+			setField(L, "spellId", it->first);
+			setField(L, "level", it->second.level);
+			setField(L, "magLevel", it->second.magLevel);
+			setField(L, "manaCost", it->second.manaCost);
+			setField(L, "cooldown", it->second.cooldown);
+			setField(L, "boostDamage", it->second.boostDamage);
+			lua_rawseti(L, -2, index);
+		}
+		lua_setfield(L, -2, "spellModifier");
 	}
 	return 1;
 }
@@ -13586,7 +13631,8 @@ int LuaScriptInterface::luaCombatSetOrigin(lua_State* L)
 
 int LuaScriptInterface::luaCombatExecute(lua_State* L)
 {
-	// combat:execute(creature, variant)
+	// combat:execute(creature, variant, spellId)
+	uint32_t spellId = 0;
 	const Combat_ptr& combat = getSharedPtr<Combat>(L, 1);
 	if (!combat) {
 		reportErrorFunc(L, getErrorDesc(LUA_ERROR_COMBAT_NOT_FOUND));
@@ -13600,6 +13646,11 @@ int LuaScriptInterface::luaCombatExecute(lua_State* L)
 			pushBoolean(L, false);
 			return 1;
 		}
+	}
+
+	spellId = getNumber<int32_t>(L, 4);
+	if (spellId != 0) {
+		combat->setParam(COMBAT_PARAM_SPELLID, spellId);
 	}
 
 	Creature* creature = getCreature(L, 2);

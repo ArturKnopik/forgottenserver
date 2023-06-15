@@ -154,6 +154,7 @@ enum ItemParseAttributes_t
 	ITEM_PARSE_SUPPRESSDAZZLE,
 	ITEM_PARSE_SUPPRESSCURSE,
 	ITEM_PARSE_FIELD,
+	ITEM_PARSE_SPELLMODYFICATOR,
 	ITEM_PARSE_REPLACEABLE,
 	ITEM_PARSE_PARTNERDIRECTION,
 	ITEM_PARSE_LEVELDOOR,
@@ -217,6 +218,71 @@ enum ItemParseAttributes_t
 	ITEM_PARSE_SUPPLY,
 };
 
+struct SpellModifier
+{
+	uint32_t spellId = 0;
+	uint32_t level = 0;
+	uint32_t magLevel = 0;
+	uint32_t manaCost = 0;
+	uint32_t cooldown = 0;
+	uint32_t boostDamage = 0;
+	SpellModifier operator+(SpellModifier const& rhs)
+	{
+		SpellModifier spellMod;
+		if (spellId != rhs.spellId)
+		{
+			spellMod.spellId = spellId;
+			spellMod.level = level;
+			spellMod.magLevel = magLevel;
+			spellMod.manaCost = manaCost;
+			spellMod.cooldown = cooldown;
+			spellMod.boostDamage = boostDamage;
+		}
+		else
+		{
+			spellMod.spellId = spellId;
+			spellMod.level = level + rhs.level;
+			spellMod.magLevel = magLevel + rhs.magLevel;
+			spellMod.manaCost = manaCost + rhs.manaCost;
+			spellMod.cooldown = cooldown + rhs.cooldown;
+			spellMod.boostDamage = boostDamage + rhs.boostDamage;
+		}
+		return spellMod;
+	}
+
+	SpellModifier operator-(SpellModifier const& rhs)
+	{
+		SpellModifier spellMod;
+		if (spellId != rhs.spellId) {
+			spellMod.spellId = spellId;
+			spellMod.level = level;
+			spellMod.magLevel = magLevel;
+			spellMod.manaCost = manaCost;
+			spellMod.cooldown = cooldown;
+			spellMod.boostDamage = boostDamage;
+		} else {
+			spellMod.spellId = spellId;
+			spellMod.level = level - rhs.level;
+			spellMod.magLevel = magLevel - rhs.magLevel;
+			spellMod.manaCost = manaCost - rhs.manaCost;
+			spellMod.cooldown = cooldown - rhs.cooldown;
+			spellMod.boostDamage = boostDamage - rhs.boostDamage;
+		}
+		return spellMod;
+	}
+
+	SpellModifier& operator=(const SpellModifier& rhs)
+	{
+		spellId = spellId;
+		level = rhs.level;
+		magLevel = rhs.magLevel;
+		manaCost = rhs.manaCost;
+		cooldown = rhs.cooldown;
+		boostDamage = rhs.boostDamage;
+		return *this;
+	}
+};
+
 struct Abilities
 {
 	uint32_t healthGain = 0;
@@ -254,6 +320,8 @@ struct Abilities
 	bool manaShield = false;
 	bool invisible = false;
 	bool regeneration = false;
+
+	std::map<uint32_t, SpellModifier> spellModifierMap;
 };
 
 class ItemType

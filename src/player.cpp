@@ -4725,6 +4725,41 @@ size_t Player::getMaxDepotItems() const
 	return g_config.getNumber(isPremium() ? ConfigManager::DEPOT_PREMIUM_LIMIT : ConfigManager::DEPOT_FREE_LIMIT);
 }
 
+void Player::addSpellModifier(SpellModifier spellModifier)
+{
+	auto sm = spellModifierMap.find(spellModifier.spellId);
+
+	if (sm != spellModifierMap.end()) {
+		sm->second = sm->second + spellModifier;
+	} else {
+		spellModifierMap.emplace(spellModifier.spellId, spellModifier);
+	}
+}
+
+void Player::removeSpellModifier(SpellModifier spellModifier)
+{
+	auto sm = spellModifierMap.find(spellModifier.spellId);
+
+	if (sm != spellModifierMap.end()) {
+		sm->second = sm->second - spellModifier;
+	}
+}
+
+SpellModifier Player::getSpellModifier(uint8_t spellId)
+{
+	if (spellId == 0)
+	{
+		return SpellModifier();
+	}
+
+	auto sm = spellModifierMap.find(spellId);
+	if (sm != spellModifierMap.end()) {
+		return sm->second;
+	}
+
+	return SpellModifier();
+}
+
 std::forward_list<Condition*> Player::getMuteConditions() const
 {
 	std::forward_list<Condition*> muteConditions;

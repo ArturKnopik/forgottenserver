@@ -8,6 +8,8 @@
 #include "enums.h"
 #include "position.h"
 
+struct SpellModifier;
+
 void printXMLError(const std::string& where, const std::string& fileName, const pugi::xml_parse_result& result);
 
 std::string transformToSHA1(std::string_view input);
@@ -71,5 +73,9 @@ const char* getReturnMessage(ReturnValue value);
 int64_t OTSYS_TIME();
 
 SpellGroup_t stringToSpellGroup(const std::string& value);
+
+uint32_t getSpellMinimumCooldown(bool isAggressive);
+
+bool isValidSpellModyficator(SpellModifier& spellModifier);
 
 #endif // FS_TOOLS_H

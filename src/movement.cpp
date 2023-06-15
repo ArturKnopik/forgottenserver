@@ -828,6 +828,11 @@ ReturnValue MoveEvent::EquipItem(MoveEvent* moveEvent, Player* player, Item* ite
 		}
 	}
 
+	auto& spellModMap = it.abilities->spellModifierMap;
+	for (auto it = spellModMap.begin(); it != spellModMap.end(); it++) {
+		player->addSpellModifier(it->second);
+	}
+
 	if (needUpdateStats) {
 		player->sendStats();
 		player->sendSkills();
@@ -917,6 +922,11 @@ ReturnValue MoveEvent::DeEquipItem(MoveEvent*, Player* player, Item* item, slots
 			                    -static_cast<int32_t>(player->getDefaultStats(static_cast<stats_t>(s)) *
 			                                          ((it.abilities->statsPercent[s] - 100) / 100.f)));
 		}
+	}
+
+	auto& spellModMap = it.abilities->spellModifierMap;
+	for (auto it = spellModMap.begin(); it != spellModMap.end(); it++) {
+		player->removeSpellModifier(it->second);
 	}
 
 	if (needUpdateStats) {

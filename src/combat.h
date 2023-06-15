@@ -53,6 +53,8 @@ struct CombatParams
 	CombatType_t combatType = COMBAT_NONE;
 	CombatOrigin origin = ORIGIN_SPELL;
 
+	uint32_t spellId = 0;
+
 	uint8_t impactEffect = CONST_ME_NONE;
 	uint8_t distanceEffect = CONST_ANI_NONE;
 

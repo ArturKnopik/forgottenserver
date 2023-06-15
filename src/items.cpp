@@ -175,6 +175,7 @@ const std::unordered_map<std::string, ItemParseAttributes_t> ItemParseAttributes
     {"suppressdazzle", ITEM_PARSE_SUPPRESSDAZZLE},
     {"suppresscurse", ITEM_PARSE_SUPPRESSCURSE},
     {"field", ITEM_PARSE_FIELD},
+    {"spellmodyficator", ITEM_PARSE_SPELLMODYFICATOR},
     {"replaceable", ITEM_PARSE_REPLACEABLE},
     {"partnerdirection", ITEM_PARSE_PARTNERDIRECTION},
     {"leveldoor", ITEM_PARSE_LEVELDOOR},
@@ -1676,6 +1677,50 @@ void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
 						}
 					}
 					break;
+				}
+
+				case ITEM_PARSE_SPELLMODYFICATOR: {
+					uint32_t spellId = pugi::cast<int16_t>(valueAttribute.value());
+
+					SpellModifier spellMod(spellId);
+
+					for (auto subAttributeNode : attributeNode.children()) {
+						pugi::xml_attribute subKeyAttribute = subAttributeNode.attribute("key");
+						if (!subKeyAttribute) {
+							continue;
+						}
+
+						pugi::xml_attribute subValueAttribute = subAttributeNode.attribute("value");
+						if (!subValueAttribute) {
+							continue;
+						}
+
+						tmpStrValue = boost::algorithm::to_lower_copy<std::string>(subKeyAttribute.as_string());
+						if (tmpStrValue == "level") {
+							spellMod.level = pugi::cast<uint32_t>(subValueAttribute.value());
+						} else if (tmpStrValue == "magiclevel") {
+							spellMod.magLevel = pugi::cast<uint32_t>(subValueAttribute.value());
+						} else if (tmpStrValue == "manacost") {
+							spellMod.manaCost = pugi::cast<uint32_t>(subValueAttribute.value());
+						} else if (tmpStrValue == "cooldown") {
+							spellMod.cooldown = pugi::cast<uint32_t>(subValueAttribute.value());
+						} else if (tmpStrValue == "boostdamagepercent") {
+							spellMod.boostDamage = pugi::cast<uint32_t>(subValueAttribute.value());
+						}
+					}
+
+					// avoid adding to map item not changes anything
+					if (!isValidSpellModyficator(spellMod)) {
+						continue;
+					}
+
+					auto sm = abilities.spellModifierMap.find(spellId);
+					if (sm != abilities.spellModifierMap.end()) {
+						sm->second + spellMod;
+					} else {
+						abilities.spellModifierMap.emplace(
+						    spellId, spellMod);
+					}
 				}
 
 				case ITEM_PARSE_REPLACEABLE: {
