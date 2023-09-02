@@ -10,6 +10,7 @@
 #include "iomarket.h"
 #include "monsters.h"
 #include "outfit.h"
+#include "pathfinding.h"
 #include "protocollogin.h"
 #include "protocolold.h"
 #include "protocolstatus.h"
@@ -28,6 +29,7 @@
 DatabaseTasks g_databaseTasks;
 Dispatcher g_dispatcher;
 Scheduler g_scheduler;
+PathFinding g_pathfinding(PATHFINDING_THREADS);
 
 Game g_game;
 ConfigManager g_config;
@@ -69,6 +71,7 @@ int main(int argc, char* argv[])
 
 	ServiceManager serviceManager;
 
+	g_pathfinding.start();
 	g_dispatcher.start();
 	g_scheduler.start();
 
@@ -82,11 +85,13 @@ int main(int argc, char* argv[])
 		serviceManager.run();
 	} else {
 		std::cout << ">> No services running. The server is NOT online." << std::endl;
+		g_pathfinding.shutdown();
 		g_scheduler.shutdown();
 		g_databaseTasks.shutdown();
 		g_dispatcher.shutdown();
 	}
 
+	g_pathfinding.join();
 	g_scheduler.join();
 	g_databaseTasks.join();
 	g_dispatcher.join();

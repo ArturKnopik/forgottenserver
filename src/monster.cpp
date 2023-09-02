@@ -372,7 +372,7 @@ void Monster::updateTargetList()
 
 	SpectatorVec spectators;
 	g_game.map.getSpectators(spectators, position, true);
-	spectators.erase(this);
+	fastVectorRemoveOne<Creature*>(spectators, this);
 	for (Creature* spectator : spectators) {
 		onCreatureFound(spectator);
 	}
@@ -1992,6 +1992,7 @@ bool Monster::challengeCreature(Creature* creature, bool force /* = false*/)
 		targetChangeCooldown = 8000;
 		challengeFocusDuration = targetChangeCooldown;
 		targetChangeTicks = 0;
+		g_game.addToCheckFollow(this);
 	}
 	return result;
 }

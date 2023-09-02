@@ -8,6 +8,7 @@
 #include "combat.h"
 #include "game.h"
 #include "spectators.h"
+#include "tools.h"
 
 extern Game g_game;
 
@@ -908,7 +909,7 @@ bool ConditionRegeneration::executeCondition(Creature* creature, int32_t interva
 
 				SpectatorVec spectators;
 				g_game.map.getSpectators(spectators, player->getPosition(), false, true);
-				spectators.erase(player);
+				fastVectorRemoveOne<Creature*>(spectators, player);
 				if (!spectators.empty()) {
 					message.type = MESSAGE_HEALED_OTHERS;
 					message.text = player->getName() + " was healed for " + healString;
@@ -940,7 +941,7 @@ bool ConditionRegeneration::executeCondition(Creature* creature, int32_t interva
 
 				SpectatorVec spectators;
 				g_game.map.getSpectators(spectators, player->getPosition(), false, true);
-				spectators.erase(player);
+				fastVectorRemoveOne<Creature*>(spectators, player);
 				if (!spectators.empty()) {
 					message.type = MESSAGE_HEALED_OTHERS;
 					message.text = player->getName() + " gained " + manaGainString + " mana.";

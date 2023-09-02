@@ -213,6 +213,7 @@
     <ClCompile Include="..\src\outfit.cpp" />
     <ClCompile Include="..\src\outputmessage.cpp" />
     <ClCompile Include="..\src\party.cpp" />
+    <ClCompile Include="..\src\pathfinding.cpp" />
     <ClCompile Include="..\src\player.cpp" />
     <ClCompile Include="..\src\podium.cpp" />
     <ClCompile Include="..\src\position.cpp" />
@@ -297,6 +298,7 @@
     <ClInclude Include="..\src\outfit.h" />
     <ClInclude Include="..\src\outputmessage.h" />
     <ClInclude Include="..\src\party.h" />
+    <ClInclude Include="..\src\pathfinding.h" />
     <ClInclude Include="..\src\player.h" />
     <ClInclude Include="..\src\podium.h" />
     <ClInclude Include="..\src\position.h" />

@@ -15,6 +15,7 @@
 #include "mounts.h"
 #include "movement.h"
 #include "npc.h"
+#include "pathfinding.h"
 #include "raids.h"
 #include "scheduler.h"
 #include "spells.h"
@@ -41,6 +42,7 @@ extern GlobalEvents* g_globalEvents;
 extern Events* g_events;
 extern Chat* g_chat;
 extern LuaEnvironment g_luaEnvironment;
+extern PathFinding g_pathfinding;
 
 namespace {
 
@@ -153,6 +155,7 @@ void dispatchSignalHandler(int signal)
 			break;
 #else
 		case SIGBREAK: // Shuts the server down
+			g_pathfinding.join();
 			g_dispatcher.addTask(sigbreakHandler);
 			// hold the thread until other threads end
 			g_scheduler.join();

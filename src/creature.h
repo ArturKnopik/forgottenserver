@@ -51,6 +51,7 @@ struct FindPathParams
 	int32_t maxTargetDist = -1;
 };
 
+static constexpr int32_t EVENT_PATH_FINDING = 50;
 static constexpr int32_t EVENT_CREATURECOUNT = 10;
 static constexpr int32_t EVENT_CREATURE_THINK_INTERVAL = 1000;
 static constexpr int32_t EVENT_CHECK_CREATURE_INTERVAL = (EVENT_CREATURE_THINK_INTERVAL / EVENT_CREATURECOUNT);
@@ -175,6 +176,8 @@ public:
 	void addEventWalk(bool firstStep = false);
 	void stopEventWalk();
 	virtual void goToFollowCreature();
+	virtual void goToFollowCreatureContinue();
+
 
 	// walk events
 	virtual void onWalk(Direction& dir);

@@ -1350,7 +1350,7 @@ void Player::onCreatureMove(Creature* creature, const Tile* newTile, const Posit
 
 	if (hasFollowPath && (creature == followCreature || (creature == this && followCreature))) {
 		isUpdatingPath = false;
-		g_dispatcher.addTask([id = getID()]() { g_game.updateCreatureWalk(id); });
+		g_game.addToCheckFollow(this);
 	}
 
 	if (creature != this) {
@@ -1836,7 +1836,7 @@ void Player::removeExperience(uint64_t exp, bool sendText /* = false*/)
 
 		SpectatorVec spectators;
 		g_game.map.getSpectators(spectators, position, false, true);
-		spectators.erase(this);
+		fastVectorRemoveOne<Creature*>(spectators, this);
 		if (!spectators.empty()) {
 			message.type = MESSAGE_EXPERIENCE_OTHERS;
 			message.text = getName() + " lost " + expString;

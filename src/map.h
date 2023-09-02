@@ -9,6 +9,8 @@
 #include "spawn.h"
 #include "town.h"
 
+using SpectatorVec = std::vector<Creature*>;
+
 class Creature;
 
 static constexpr int32_t MAP_MAX_LAYERS = 16;

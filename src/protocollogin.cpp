@@ -11,6 +11,7 @@
 #include "iologindata.h"
 #include "outputmessage.h"
 #include "tasks.h"
+#include "tile.h"
 
 extern ConfigManager g_config;
 extern Game g_game;

@@ -8,12 +8,13 @@
 #include "condition.h"
 #include "item.h"
 #include "tools.h"
+#include "tile.h"
 
 class Creature;
 class MatrixArea;
 class Player;
 struct Position;
-class SpectatorVec;
+//class SpectatorVec;
 class Tile;
 
 // for luascript callback

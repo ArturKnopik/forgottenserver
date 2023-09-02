@@ -1057,10 +1057,10 @@ void Tile::removeThing(Thing* thing, uint32_t count)
 		if (creatures) {
 			auto it = std::find(creatures->begin(), creatures->end(), thing);
 			if (it != creatures->end()) {
-				g_game.map.clearSpectatorCache();
 				if (creature->getPlayer()) {
 					g_game.map.clearPlayersSpectatorCache();
 				}
+				g_game.map.clearSpectatorCache();
 
 				creatures->erase(it);
 			}

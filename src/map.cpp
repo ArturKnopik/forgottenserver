@@ -260,7 +260,20 @@ void Map::moveCreature(Creature& creature, Tile& newTile, bool forceTeleport /* 
 	SpectatorVec spectators, newPosSpectators;
 	getSpectators(spectators, oldPos, true);
 	getSpectators(newPosSpectators, newPos, true);
-	spectators.addSpectators(newPosSpectators);
+	const size_t spectatorsSize = spectators.size();
+	for (Creature* spectator : newPosSpectators) {
+		bool duplicate = false;
+		for (size_t i = 0; i < spectatorsSize; ++i) {
+			if (spectators[i] == spectator) {
+				duplicate = true;
+				break;
+			}
+		}
+
+		if (!duplicate) {
+			spectators.emplace_back(newPosSpectators);
+		}
+	}
 
 	std::vector<int32_t> oldStackPosVector;
 	for (Creature* spectator : spectators) {
@@ -406,7 +419,7 @@ void Map::getSpectators(SpectatorVec& spectators, const Position& centerPos, boo
 			auto it = playersSpectatorCache.find(centerPos);
 			if (it != playersSpectatorCache.end()) {
 				if (!spectators.empty()) {
-					spectators.addSpectators(it->second);
+					spectators.emplace_back(it->second);
 				} else {
 					spectators = it->second;
 				}
@@ -421,7 +434,7 @@ void Map::getSpectators(SpectatorVec& spectators, const Position& centerPos, boo
 				if (!onlyPlayers) {
 					if (!spectators.empty()) {
 						const SpectatorVec& cachedSpectators = it->second;
-						spectators.addSpectators(cachedSpectators);
+						spectators.emplace_back(cachedSpectators);
 					} else {
 						spectators = it->second;
 					}

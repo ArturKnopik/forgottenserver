@@ -61,6 +61,8 @@ static constexpr int32_t RANGE_BROWSE_FIELD_INTERVAL = 400;
 static constexpr int32_t RANGE_WRAP_ITEM_INTERVAL = 400;
 static constexpr int32_t RANGE_REQUEST_TRADE_INTERVAL = 400;
 
+#define EVENT_CHECK_FOLLOW 100
+
 /**
  * Main Game class.
  * This class is responsible to control everything that happens
@@ -505,6 +507,7 @@ public:
 	Map map;
 	Mounts mounts;
 	Raids raids;
+	std::unordered_set<Creature*> checkFollowSet;
 
 	std::forward_list<Item*> toDecayItems;
 
@@ -513,6 +516,9 @@ public:
 	void addTileToClean(Tile* tile) { tilesToClean.emplace(tile); }
 	void removeTileToClean(Tile* tile) { tilesToClean.erase(tile); }
 	void clearTilesToClean() { tilesToClean.clear(); }
+
+	void checkFollow(bool thread);
+	void addToCheckFollow(Creature* creature);
 
 private:
 	bool playerSaySpell(Player* player, SpeakClasses type, const std::string& text);
