@@ -58,4 +58,42 @@ PlayerStorageKeys = {
 	bosstiaryDay = 450004,
 	bosstiaryTodayRemoveDate = 450005,
 	bosstiaryTodayRemoveCount = 450006,
+
+	-- Prey: 460000 to 460050
+	--[[ Storage structure per slot:
+		preySlotXMonster = {NUMBER}
+		preySlot1BonusType = preySlotXMonster + 1
+		preySlot1BonusValue = preySlotXMonster + 2
+		preySlotXDataState = preySlotXMonster + 3
+		preySlotXFreeRerollTime = preySlotXMonster + 4
+		preySlotXStatus = preySlotXMonster + 5
+		preySlotXRolledMonstersStart = preySlotXMonster + 5
+		preySlotXRolledMonstersStart = preySlotXRolledMonstersStart + 9(monsters grid size/CONST.PREY_GRID_SIZE)
+	]]
+	preySlot1Monster = 460000,
+	preySlot1BonusType = 460001,
+	preySlot1BonusValue = 460002,
+	preySlot1DataState = 460003,
+	preySlot1FreeRerollTime = 460004,
+	preySlot1Status = 460005,
+	preySlot1RolledMonstersStart = 460006,
+	preySlot1RolledMonstersEnd = 460015,
+
+	preySlot2Monster = 460020,
+	preySlot2BonusType = 460021,
+	preySlot2BonusValue = 460022,
+	preySlot2DataState = 460023,
+	preySlot2FreeRerollTime = 460024,
+	preySlot2Status = 460025,
+	preySlot2RolledMonstersStart = 460026,
+	preySlot2RolledMonstersEnd = 460035,
+
+	preySlot3Monster = 460040,
+	preySlot3BonusType = 460041,
+	preySlot3BonusValue = 460042,
+	preySlot3DataState = 460043,
+	preySlot3FreeRerollTime = 460044,
+	preySlot3Status = 460045,
+	preySlot3RolledMonstersStart = 460046,
+	preySlot3RolledMonstersEnd = 460045,
 }
