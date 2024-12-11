@@ -15,7 +15,9 @@ local CONST = {
 	SLOT = {
 		FIRST = 0,
 		SECOND = 1,
-		THIRD = 2
+		THIRD = 2,
+
+		SIZE = 3
 	},
     OPTION = {
         NONE = 0,
@@ -51,7 +53,12 @@ local CONST = {
         EXTREME = 3
     },
     MONSTER_GRID_TYPE = {},
-    PREY_GRID_SIZE = 9
+    PREY_GRID_SIZE = 9,
+    VALIDATION = {
+        OK = 0,
+        NOT_ENAUGHT_MONSTERS_IN_GRIDS = 1,
+        FAIL = 2
+    }
 }
 
 do
@@ -133,6 +140,15 @@ local players = {}
 
 -- PRIVATE API --
 
+local function initMonstersArray()
+    monsters = {}
+    for i = 1, CONST.PREY_GRID_SIZE, 1 do
+        table.insert(monsters, i, 0)
+    end
+
+    return monsters
+end
+
 local function initPlayerSlotTemplate()
     local template =  {
         raceId = 0,
@@ -140,12 +156,9 @@ local function initPlayerSlotTemplate()
         bonusType = CONST.BONUS_TYPE.DAMAGE,
         bonusValue = 0,
         freeRerollTime = 0,
-        monsters = {}
+        dataState = CONST.DATA_STATE.INACTIVE,
+        monsters = initMonstersArray()
     }
-
-    for i = 1, CONST.PREY_GRID_SIZE, 1 do
-        template.monsters[i] = 0
-    end
 
     return template
 end
@@ -182,6 +195,53 @@ local function getMonsterGridType(level)
     end
 
     return nil
+end
+
+local function getMonstersByDifficults(difficult)
+    return monsters[difficult]
+end
+
+local function getAllMonstersCount()
+    local count = 0
+    for _, monsters in pairs(monsters) do
+        count = count + #monsters
+    end
+
+    return count
+end
+
+-- Validate if in each monster type diffficult array is enaught monsters
+-- note: Grid size multipled by CONST.SLOT.SIZE, checks if there are enough monsters to fill all the slots
+local function canAssignMonstersToAllGrids(grid)
+    local isValidGrid = true
+    if not grid.GRID.EASY * CONST.SLOT.SIZE <= #getMonstersByDifficults(CONST.MONSTER_DIFFICULT.EASY) then
+        print("fail easy")
+        isValidGrid = false
+    end
+
+    if not grid.GRID.MEDIUM * CONST.SLOT.SIZE <= #getMonstersByDifficults(CONST.MONSTER_DIFFICULT.MEDIUM) then
+        print("fail medium")
+        isValidGrid = false
+    end
+
+    if not grid.GRID.HARD * CONST.SLOT.SIZE <= #getMonstersByDifficults(CONST.MONSTER_DIFFICULT.HARD) then
+        print("fail hard")
+        isValidGrid = false
+    end
+
+    if not grid.GRID.EXTREME * CONST.SLOT.SIZE <= #getMonstersByDifficults(CONST.MONSTER_DIFFICULT.EXTREME) then
+        print("fail extreme")
+        isValidGrid = false
+    end
+
+    if isValidGrid == false then
+        if getAllMonstersCount() < CONST.PREY_GRID_SIZE * CONST.SLOT.SIZE then
+            return CONST.VALIDATION.FAIL
+        end
+        return CONST.VALIDATION.NOT_ENAUGHT_MONSTERS_IN_GRIDS
+    end
+
+    return CONST.VALIDATION.OK
 end
 
 local function loadPlayerSlotData(player, slot)
@@ -228,13 +288,26 @@ local function isValidSlot(slot)
 	return false
 end
 
-local function getRandomMonster(monsterDifficult)
-    local mTypes = monsters[monsterDifficult]
+local function getRandomByDifficultMonster(difficult)
+    local mTypes = monsters[difficult]
     if not mTypes then
         return nil
     end
 
     return mTypes[math.random(#mTypes)]
+end
+
+local function getRandomFromAllMonsters()
+    return monsters.all[math.random(#monsters.all)]
+end
+
+local function isMonsterAlreadyRolled(monsterType, assigendMonstersArray)
+    for _, mType in pairs(assigendMonstersArray) do
+        if mType == monsterType then
+            return true
+        end
+    end
+    return false
 end
 
 -- PUBLIC API --
@@ -265,28 +338,157 @@ Prey.initMonsters = function()
 	end
 end
 
-function Player.preparePreyMonsterSelectionGrid(self, slot)
+function Player.resetPreyMonstersSlot(self, slot)
+    local data = getPlayerSlotData(self, slot)
+    data.monsters = initMonstersArray()
+end
+
+function Player.resetPreyAllSlots(self)
+    self:resetPreyMonstersSlot(CONST.SLOT.FIRST)
+    self:resetPreyMonstersSlot(CONST.SLOT.SECOND)
+    self:resetPreyMonstersSlot(CONST.SLOT.THIRD)
+end
+
+function Player.preparePreyMonsterSelectionGrid(self, slot, alreadyAssignedMonsters)
     if not isValidSlot(slot) then
         return false
     end
-
-    -- TODO: check if time is equal 0, if yes, player require data preparation
 
     local grid = getMonsterGridType(self:getLevel())
     if not grid then
         return false
     end
 
-    local preyMonsters = 0
-    for i = 1, CONST.PREY_GRID_SIZE, 1 do
-        for i = 1, grid.GRID.EASY, 1 do
-            if #monsters[CONST.MONSTER_DIFFICULT.EASY] > 0 then
-                --#monsters.all
-            else
+    local err = canAssignMonstersToAllGrids(grid)
 
+    if err == CONST.VALIDATION.FAIL then
+        return false
+    end
+
+
+    local playerSlotData = getPlayerSlotData(self, slot)
+
+    for i = 1, CONST.PREY_GRID_SIZE, 1 do
+        for _ = 1, grid.GRID.EASY, 1 do
+            if err == CONST.VALIDATION.OK then
+                local rollMonster
+                repeat
+                    rollMonster = getRandomByDifficultMonster(CONST.MONSTER_DIFFICULT.EASY)
+                    if not rollMonster then
+                        return false
+                    end
+                until isMonsterAlreadyRolled(rollMonster, alreadyAssignedMonsters) == false
+                table.insert(alreadyAssignedMonsters, rollMonster)
+                playerSlotData.monsters[i] = rollMonster:getBestiaryInfo().raceId
+                i = i + 1
+            else
+                local rollMonster
+                repeat
+                    rollMonster = getRandomFromAllMonsters()
+                    if not rollMonster then
+                        return false
+                    end
+                until isMonsterAlreadyRolled(rollMonster, alreadyAssignedMonsters) == false
+                table.insert(alreadyAssignedMonsters, rollMonster)
+                i = i + 1
+            end
+        end
+
+        for _ = 1, grid.GRID.MEDIUM, 1 do
+            if err == CONST.VALIDATION.OK then
+                local rollMonster
+                repeat
+                    rollMonster = getRandomByDifficultMonster(CONST.MONSTER_DIFFICULT.MEDIUM)
+                    if not rollMonster then
+                        return false
+                    end
+                until isMonsterAlreadyRolled(rollMonster, alreadyAssignedMonsters) == false
+                table.insert(alreadyAssignedMonsters, rollMonster)
+                i = i + 1
+            else
+                local rollMonster
+                repeat
+                    rollMonster = getRandomFromAllMonsters()
+                    if not rollMonster then
+                        return false
+                    end
+                until isMonsterAlreadyRolled(rollMonster, alreadyAssignedMonsters) == false
+                table.insert(alreadyAssignedMonsters, rollMonster)
+                i = i + 1
+            end
+        end
+
+        for _ = 1, grid.GRID.HARD, 1 do
+            if err == CONST.VALIDATION.OK then
+                local rollMonster
+                repeat
+                    rollMonster = getRandomByDifficultMonster(CONST.MONSTER_DIFFICULT.HARD)
+                    if not rollMonster then
+                        return false
+                    end
+                until isMonsterAlreadyRolled(rollMonster, alreadyAssignedMonsters) == false
+                table.insert(alreadyAssignedMonsters, rollMonster)
+                i = i + 1
+            else
+                local rollMonster
+                repeat
+                    rollMonster = getRandomFromAllMonsters()
+                    if not rollMonster then
+                        return false
+                    end
+                until isMonsterAlreadyRolled(rollMonster, alreadyAssignedMonsters) == false
+                table.insert(alreadyAssignedMonsters, rollMonster)
+                i = i + 1
+            end
+        end
+
+        for _ = 1, grid.GRID.EXTREME, 1 do
+            if err == CONST.VALIDATION.OK then
+                local rollMonster
+                repeat
+                    rollMonster = getRandomByDifficultMonster(CONST.MONSTER_DIFFICULT.EXTREME)
+                    if not rollMonster then
+                        return false
+                    end
+                until isMonsterAlreadyRolled(rollMonster, alreadyAssignedMonsters) == false
+                table.insert(alreadyAssignedMonsters, rollMonster)
+                i = i + 1
+            else
+                local rollMonster
+                repeat
+                    rollMonster = getRandomFromAllMonsters()
+                    if not rollMonster then
+                        return false
+                    end
+                until isMonsterAlreadyRolled(rollMonster, alreadyAssignedMonsters) == false
+                table.insert(alreadyAssignedMonsters, rollMonster)
+                i = i + 1
             end
         end
     end
+
+    return true
+end
+
+function Player.prepareMonstersGrids(self)
+    -- TODO: check if time is equal 0, if yes, player require data preparation
+    self:resetPreyAllSlots()
+
+    local assigendMonsters = {}
+    if self:preparePreyMonsterSelectionGrid(CONST.SLOT.FIRST, assigendMonsters) == false then
+        self:resetPreyAllSlots()
+        return false
+    end
+    if self:preparePreyMonsterSelectionGrid(CONST.SLOT.SECOND, assigendMonsters) == false then
+        self:resetPreyAllSlots()
+        return false
+    end
+    if self:preparePreyMonsterSelectionGrid(CONST.SLOT.THIRD, assigendMonsters) == false then
+        self:resetPreyAllSlots()
+        return false
+    end
+
+    return true
 end
 
 function Player.sendPreyMonsterSelectionGrid(self, slot)
@@ -299,11 +501,30 @@ function Player.sendPreyMonsterSelectionGrid(self, slot)
     msg:addByte(slot)
     msg:addByte(CONST.DATA_STATE.SELECTION)
     msg:addByte(CONST.PREY_GRID_SIZE)
+
+    local slotData = getPlayerSlotData(self, slot)
     for i = 1, CONST.PREY_GRID_SIZE, 1 do
-        
+        local mType = slotData.monsters[i]
+        msg:addString(mType:name())
+        local outfit = mType:getOutfit()
+        local looktype = outfit.lookType
+        msg:addU16(outfit.lookType)
+        if outfit.lookType == 0 then
+            msg:addU16(mType.lookTypeEx);
+        else
+            msg:addByte(outfit.lookHead)
+            msg:addByte(outfit.lookBody)
+            msg:addByte(outfit.lookLegs)
+            msg:addByte(outfit.lookFeet)
+            msg:addByte(outfit.lookAddons)
+        end
     end
 
     return true
+end
+
+function Player.sendPreyAllSlotsData(self, slot)
+
 end
 
 -- NETWORK MESSAGE
