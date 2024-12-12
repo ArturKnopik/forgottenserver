@@ -1,5 +1,6 @@
 local startup = GlobalEvent("prey_onStartup")
 function startup.onStartup()
+	print("Prey.initMonsters()")
 	Prey.initMonsters()
 	return true
 end
