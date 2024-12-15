@@ -4,13 +4,19 @@ local config = {
 
 	local CONST = {
 		DATA_STATE = {
-			LOCKED = 0,
+			REROLL_NEW_GRID = 0,
 			INACTIVE = 1,
 			ACTIVE = 2,
-			SELECTION = 3,
+			GRID_MONSTER_LIST = 3,
 			SELECTION_CHANGE_MONSTER = 4,
 			LIST_SELECTION = 5,
 			WILD_CARD_SELECTION = 6
+		},
+		ACTION_MSG = {
+			NEW_GRID = 0,
+			BONUS_REROLL = 1,
+			ACCEPT = 2,
+			LIST_SELECTION = 3
 		},
 		SLOT = {
 			FIRST = 0,
@@ -58,7 +64,11 @@ local config = {
 			OK = 0,
 			NOT_ENOUGH_MONSTERS_IN_GRIDS = 1,
 			FAIL = 2
-		}
+		},
+		DURATION = 2 * 60 * 60,
+		FREE_REROLL_TIME = 20 * 60 * 60,
+		REROLL_WILDCARDS_COST = 1,
+		SELECT_WILDCARDS_COST = 5
 	}
 
 	do
@@ -117,6 +127,8 @@ local config = {
 
 local players = {}
 
+local networkMsgMonsterList = nil
+
 -- PRIVATE API --
 
 local function initMonstersArray()
@@ -133,8 +145,9 @@ local function initPlayerSlotTemplate()
 		raceId = 0,
 		option = CONST.OPTION.NONE,
 		bonusType = CONST.BONUS_TYPE.DAMAGE,
-		bonusValue = 0,
+		bonusValue = 1,
 		freeRerollTime = 0,
+		preyDuration = 0,
 		dataState = CONST.DATA_STATE.INACTIVE,
 		monsters = initMonstersArray()
 	}
@@ -144,10 +157,46 @@ end
 
 local function initPlayerTemplate(player)
 	players[player:getGuid()] = {
-		[CONST.SLOT.FIRST] = initPlayerSlotTemplate(),
-		[CONST.SLOT.SECOND] = initPlayerSlotTemplate(),
-		[CONST.SLOT.THIRD] = initPlayerSlotTemplate()
+		slots = {
+			[CONST.SLOT.FIRST] = initPlayerSlotTemplate(),
+			[CONST.SLOT.SECOND] = initPlayerSlotTemplate(),
+			[CONST.SLOT.THIRD] = initPlayerSlotTemplate()
+		},
+		checksum = 0
 	}
+end
+
+local function prepareMonsterListNetworkMessage()
+	local msg = NetworkMessage()
+	msg:addByte(0xE8)
+	msg:addByte(0) -- slot, will be chnaged in future calls
+	msg:addByte(CONST.DATA_STATE.LIST_SELECTION) -- slot state, will be chnaged in future calls
+	msg:addU16(#monsters.all)
+
+	for i = 1, #monsters.all, 1 do
+		local mType = monsters.all[i]
+		print(mType:getBestiaryInfo().raceId)
+		msg:addU16(mType:	getBestiaryInfo().raceId)
+	end
+
+	networkMsgMonsterList = msg
+end
+
+local function updateMonsterListMsg(slot)
+	local msg = NetworkMessage()
+	msg:setPo
+	msg:addByte(0xE8)
+	msg:addByte(0) -- slot, will be chnaged in future calls
+	msg:addByte(CONST.) -- slot state, will be chnaged in future calls
+	msg:addU16(#monsters.all)
+
+	for i = 1, #monsters.all, 1 do
+		local mType = monsters.all[i]
+		print(mType:getBestiaryInfo().raceId)
+		msg:addU16(mType:	getBestiaryInfo().raceId)
+	end
+
+	networkMsgMonsterList = msg
 end
 
 function getPlayerData(player)
@@ -155,7 +204,15 @@ function getPlayerData(player)
 end
 
 local function getPlayerSlotData(player, slot)
-	return players[player:getGuid()][slot]
+	if not players[player:getGuid()] then
+		return nil
+	end
+
+	if not players[player:getGuid()].slots then
+		return nil
+	end
+
+	return players[player:getGuid()].slots[slot]
 end
 
 local function isRelevantGrid(grid, level)
@@ -189,6 +246,33 @@ local function getAllMonstersCount()
 	return count
 end
 
+local function setPreySelectedMonsterRaceId(player, slot, raceId)
+	local data = getPlayerSlotData(player, slot)
+	if not data then
+		print("setPreySelectedMonsterRaceId no data")
+		return false
+	end
+
+	data.raceId = raceId
+	data.preyDuration = CONST.DURATION
+
+	print("setPreySelectedMonsterRaceId", data.raceId)
+	print(data.preyDuration)
+	return true
+end
+
+local function removePreyActivedMonsterRaceId(player, slot)
+	local data = getPlayerSlotData(player, slot)
+	if not data then
+		return false
+	end
+
+	data.raceId = 0
+	data.preyDuration = 0
+	data.dataState = CONST.DATA_STATE.INACTIVE
+	return true
+end
+
 -- Validate if in each monster type diffficult array is enaught monsters
 -- note: Grid size multipled by CONST.SLOT.SIZE, checks if there are enough monsters to fill all the slots
 local function canAssignMonstersToAllGrids(grid)
@@ -220,8 +304,13 @@ local function canAssignMonstersToAllGrids(grid)
 	return CONST.VALIDATION.OK
 end
 
+-- Cipsoft client specific, 3 slots
+-- Returns freeRerollTime
 local function loadPlayerSlotData(player, slot)
 	local data = getPlayerSlotData(player, slot)
+	if not data then
+		return -1
+	end
 
 	local storageStart = 0
 	if slot == CONST.SLOT.FIRST then
@@ -235,17 +324,108 @@ local function loadPlayerSlotData(player, slot)
 	data.raceId = math.max(0, player:getStorageValue(storageStart) or 0)
 	data.bonusType = math.max(0, player:getStorageValue(storageStart + 1) or 0)
 	data.bonusValue = math.max(0, player:getStorageValue(storageStart + 2) or 0)
-	data.option = math.max(0, player:getStorageValue(storageStart + 3) or 0)
+	data.dataState = math.max(0, player:getStorageValue(storageStart + 3) or 0)
 	data.freeRerollTime = math.max(0, player:getStorageValue(storageStart + 4) or 0)
+	data.preyDuration = math.max(0, player:getStorageValue(storageStart + 5) or 0)
+	data.option = math.max(0, player:getStorageValue(storageStart + 6) or 0)
 	for i = 1, CONST.PREY_GRID_SIZE, 1 do
-		data.monsters[i] = math.max(0, player:getStorageValue(storageStart + 4 + i) or 0)
+		data.monsters[i] = math.max(0, player:getStorageValue(storageStart + 5 + i) or 0)
 	end
+
+	return data.freeRerollTime
 end
 
+-- simply checksum
+local function generateChecksum(player)
+	local data = getPlayerData(player)
+	if not player then
+		return -1
+	end
+
+	local sum = 0
+
+	for _, slot in ipairs(data.slots) do
+		for i = 1, CONST.SLOT.SIZE, 1 do
+			sum = sum + slot.monsters[i]
+		end
+	end
+
+	return sum
+end
+
+-- Cipsoft client specific, 3 slots
 local function loadPlayerData(player)
-	loadPlayerSlotData(player, CONST.SLOT.FIRST)
-	loadPlayerSlotData(player, CONST.SLOT.SECOND)
-	loadPlayerSlotData(player, CONST.SLOT.THIRD)
+	local data = getPlayerData(player)
+	if data then
+		if data.checksum == -1 or data.checksum == nil then
+			return false
+		elseif data.checksum == player:getStorageValue(PlayerStorageKeys.preyChecksum) then
+			--return true
+		end
+	end
+
+	-- used in case of first init
+	local assignedMonsters = {}
+
+	for i = 0, CONST.SLOT.SIZE -1, 1 do
+		if loadPlayerSlotData(player, i) <= 0 then
+			if getPlayerSlotData(player, i).freeRerollTime == 0 then
+				player:preparePreyMonsterSelectionGrid(i, assignedMonsters)
+			else
+				return false
+			end
+		end
+	end
+	return true
+end
+
+-- Cipsoft client specific, 3 slots
+local function savePlayerSlotData(player, slot)
+	local data = getPlayerSlotData(player, slot)
+	if not data then
+		return false
+	end
+
+	local storageStart = 0
+	if slot == CONST.SLOT.FIRST then
+		storageStart = PlayerStorageKeys.preySlot1Monster
+	elseif slot == CONST.SLOT.SECOND then
+		storageStart = PlayerStorageKeys.preySlot2Monster
+	elseif slot == CONST.SLOT.THIRD then
+		storageStart = PlayerStorageKeys.preySlot3Monster
+	end
+
+	player:setStorageValue(storageStart, data.raceId)
+	player:setStorageValue(storageStart + 1, data.bonusType)
+	player:setStorageValue(storageStart + 2, data.bonusValue)
+	player:setStorageValue(storageStart + 3, data.dataState)
+	player:setStorageValue(storageStart + 4, data.freeRerollTime)
+	player:setStorageValue(storageStart + 5, data.preyDuration)
+	player:setStorageValue(storageStart + 6, data.option)
+	for i = 1, CONST.PREY_GRID_SIZE, 1 do
+		player:setStorageValue(storageStart + 5 + i, data.monsters[i])
+	end
+
+	return true
+end
+
+-- Cipsoft client specific, 3 slots
+local function savePlayerData(player)
+	local data = getPlayerData(player)
+	if not data then
+		return false
+	end
+
+	local checksum = generateChecksum(player)
+	data.checksum = checksum
+	player:setStorageValue(PlayerStorageKeys.preyChecksum, checksum)
+
+	for i = 0, CONST.SLOT.SIZE -1, 1 do
+		if not savePlayerSlotData(player, i) then
+			return false
+		end
+	end
+	return true
 end
 
 local function rollBonusValue(oldBonus)
@@ -254,6 +434,10 @@ end
 
 local function rollBonusType()
 	return math.random(CONST.BONUS_TYPE.DAMAGE, CONST.BONUS_TYPE.LOOT)
+end
+
+local function getRerollPrice(level)
+	return math.max(150, 150 * level)
 end
 
 local function isValidSlot(slot)
@@ -279,7 +463,6 @@ end
 
 local function isMonsterAlreadyRolled(monsterType, assignedMonstersArray)
 	for _, mType in pairs(assignedMonstersArray) do
-		-- print("assignedMonstersArray", mType:getName(), monsterType:getName())
 		if mType == monsterType then
 			return true
 		end
@@ -301,17 +484,17 @@ end
 -- NOTE: Lack of monster with 4 and 5 stars on the TFS map
 Prey.initMonsters = function()
 	for _, mType in pairs(Game.getMonsterTypes()) do
-		if mType:getBestiaryInfo().raceId then
-			if mType:getBestiaryInfo().difficulty == 1 or mType:getBestiaryInfo().difficulty == 2 then
+		if mType:getBestiaryInfo().raceId > 0 and mType:getExperience() then
+			if mType:getBestiaryInfo().difficulty == 0 or mType:getBestiaryInfo().difficulty == 1 then
 				table.insert(monsters[CONST.MONSTER_DIFFICULT.EASY], mType)
 				table.insert(monsters.all, mType)
-			elseif mType:getBestiaryInfo().difficulty == 3 then
+			elseif mType:getBestiaryInfo().difficulty == 2 then
 				table.insert(monsters[CONST.MONSTER_DIFFICULT.MEDIUM], mType)
 				table.insert(monsters.all, mType)
-			elseif mType:getBestiaryInfo().difficulty == 4 then
+			elseif mType:getBestiaryInfo().difficulty == 3 then
 				table.insert(monsters[CONST.MONSTER_DIFFICULT.HARD], mType)
 				table.insert(monsters.all, mType)
-			elseif mType:getBestiaryInfo().difficulty == 5 then
+			elseif mType:getBestiaryInfo().difficulty == 4 then
 				table.insert(monsters[CONST.MONSTER_DIFFICULT.EXTREME], mType)
 				table.insert(monsters.all, mType)
 			end
@@ -321,11 +504,94 @@ end
 
 do
 	Prey.initMonsters()
+	prepareMonsterListNetworkMessage()
+	
+end
+
+function Player.setPreySelectedMonsterIndex(self, slot, index)
+	local data = getPlayerSlotData(self, slot)
+	if not data then
+		return false
+	end
+	print("setPreySelectedMonsterIndex",data.monsters[index + 1])
+	return setPreySelectedMonsterRaceId(self, slot, data.monsters[index + 1])
+end
+
+function Player.getPreyWildcards(self, slot)
+	return math.max(0, self:getStorageValue(PlayerStorageKeys.preyWildcards) or 0)
+end
+
+function Player.isPreySlotUnlocked(self, slot)
+	if slot == CONST.SLOT.FIRST then
+		return true
+	elseif slot == CONST.SLOT.SECOND and (self:isPremium() or math.max(0, self:getStorageValue(PlayerStorageKeys.preySecondSlotUnlocked) or 0) == 1) then
+		return false
+	elseif slot == CONST.SLOT.THIRD and math.max(0, self:getStorageValue(PlayerStorageKeys.preySecondSlotUnlocked) or 0) == 1 then
+		return true
+	end
+
+	return false
+end
+
+function Player.resetPreyDurationTime(self, slot)
+	local data = getPlayerSlotData(self, slot)
+	if not data then
+		return false
+	end
+
+	data.preyDuration = CONST.DURATION
+
+	return true
+end
+
+function Player.removePreyDurationTime(self, slot, time)
+	local data = getPlayerSlotData(self, slot)
+	if not data then
+		return false
+	end
+
+	data.preyDuration = data.preyDuration - time
+
+	return true
+end
+
+function Player.getPreyDataState(self, slot)
+	local data = getPlayerSlotData(self, slot)
+	if not data then
+		return CONST.DATA_STATE.INACTIVE
+	end
+
+	return data.dataState
+end
+
+function Player.setPreyDataState(self, slot, dataState)
+	local data = getPlayerSlotData(self, slot)
+	if not data then
+		return false
+	end
+
+	data.dataState = dataState
+
+	return true
+end
+
+function Player.isPreyDurationExpired(self, slot)
+	local data = getPlayerSlotData(self, slot)
+	if not data then
+		return false
+	end
+
+	return data.preyDuration <= 0
 end
 
 function Player.resetPreyMonstersSlot(self, slot)
 	local data = getPlayerSlotData(self, slot)
+	if not data then
+		return false
+	end
+
 	data.monsters = initMonstersArray()
+	return true
 end
 
 function Player.resetPreyAllSlots(self)
@@ -334,23 +600,53 @@ function Player.resetPreyAllSlots(self)
 	end
 end
 
+function Player.getPreyFreeRerollTimeout(self, slot)
+	if not isValidSlot(slot) then
+		return -1
+	end
+
+	local data = getPlayerSlotData(self, slot)
+	if not data then
+		return -1
+	end
+
+	return data.freeRerollTime
+end
+
+function Player.isPreySlotRerollExpired(self, slot)
+	if not isValidSlot(slot) then
+		return -1
+	end
+
+	local data = getPlayerSlotData(self, slot)
+	if not data then
+		return -1
+	end
+
+	return math.max(0, data.freeRerollTime - os.time()) == 0
+end
+
 function Player.preparePreyMonsterSelectionGrid(self, slot, alreadyAssignedMonsters)
 	if not isValidSlot(slot) then
 		return false
 	end
-	
+
 	local grid = getMonsterByGridType(self:getLevel())
 	if not grid then
 		return false
 	end
-	
+
 	local err = canAssignMonstersToAllGrids(grid)
-	
+
 	if err == CONST.VALIDATION.FAIL then
 		return false
 	end
-	
+
 	local playerSlotData = getPlayerSlotData(self, slot)
+	if not playerSlotData then
+		return false
+	end
+
 	local i = 1
 	for _ = 1, grid.GRID.EASY, 1 do
 		if err == CONST.VALIDATION.OK then
@@ -371,12 +667,12 @@ function Player.preparePreyMonsterSelectionGrid(self, slot, alreadyAssignedMonst
 					return false
 				end
 			until not isMonsterAlreadyRolled(rollMonster, alreadyAssignedMonsters)
-			table.insert(alreadyAssignedMonsters, rollMonster)	
+			table.insert(alreadyAssignedMonsters, rollMonster)
 			playerSlotData.monsters[i] = rollMonster:getBestiaryInfo().raceId
 		end
 		i = i + 1
 	end
-	
+
 	for _ = 1, grid.GRID.MEDIUM, 1 do
 		if err == CONST.VALIDATION.OK then
 			local rollMonster
@@ -386,7 +682,7 @@ function Player.preparePreyMonsterSelectionGrid(self, slot, alreadyAssignedMonst
 					return false
 				end
 			until not isMonsterAlreadyRolled(rollMonster, alreadyAssignedMonsters)
-			table.insert(alreadyAssignedMonsters, rollMonster)	
+			table.insert(alreadyAssignedMonsters, rollMonster)
 			playerSlotData.monsters[i] = rollMonster:getBestiaryInfo().raceId
 		else
 			local rollMonster
@@ -401,7 +697,7 @@ function Player.preparePreyMonsterSelectionGrid(self, slot, alreadyAssignedMonst
 		end
 		i = i + 1
 	end
-	
+
 	for _ = 1, grid.GRID.HARD, 1 do
 		if err == CONST.VALIDATION.OK then
 			local rollMonster
@@ -411,7 +707,7 @@ function Player.preparePreyMonsterSelectionGrid(self, slot, alreadyAssignedMonst
 					return false
 				end
 			until not not isMonsterAlreadyRolled(rollMonster, alreadyAssignedMonsters)
-			table.insert(alreadyAssignedMonsters, rollMonster)	
+			table.insert(alreadyAssignedMonsters, rollMonster)
 			playerSlotData.monsters[i] = rollMonster:getBestiaryInfo().raceId
 		else
 			local rollMonster
@@ -426,7 +722,7 @@ function Player.preparePreyMonsterSelectionGrid(self, slot, alreadyAssignedMonst
 		end
 		i = i + 1
 	end
-	
+
 	for _ = 1, grid.GRID.EXTREME, 1 do
 		if err == CONST.VALIDATION.OK then
 			local rollMonster
@@ -436,7 +732,7 @@ function Player.preparePreyMonsterSelectionGrid(self, slot, alreadyAssignedMonst
 					return false
 				end
 			until not isMonsterAlreadyRolled(rollMonster, alreadyAssignedMonsters)
-			table.insert(alreadyAssignedMonsters, rollMonster)	
+			table.insert(alreadyAssignedMonsters, rollMonster)
 			playerSlotData.monsters[i] = rollMonster:getBestiaryInfo().raceId
 		else
 			local rollMonster
@@ -452,30 +748,42 @@ function Player.preparePreyMonsterSelectionGrid(self, slot, alreadyAssignedMonst
 		i = i + 1
 	end
 
+	playerSlotData.bonusType = rollBonusType()
+	playerSlotData.bonusValue = rollBonusValue(1)
+
+	playerSlotData.state = CONST.OPTION.SELECTION
+	playerSlotData.freeRerollTime = os.time() + CONST.FREE_REROLL_TIME
 	return true
 end
 
 function Player.prepareMonstersGrids(self)
-	-- TODO: check if time is equal 0, if yes, player require data preparation
 	self:resetPreyAllSlots()
 
 	local assignedMonsters = {}
-	if self:preparePreyMonsterSelectionGrid(CONST.SLOT.FIRST, assignedMonsters) == false then
-		self:resetPreyAllSlots()
-		return false
-	end
-	
-	if self:preparePreyMonsterSelectionGrid(CONST.SLOT.SECOND, assignedMonsters) == false then
-		self:resetPreyAllSlots()
-		return false
-	end
-	
-	if self:preparePreyMonsterSelectionGrid(CONST.SLOT.THIRD, assignedMonsters) == false then
-		self:resetPreyAllSlots()
-		return false
+	for i = 0, CONST.SLOT.SIZE -1, 1 do
+		if self:preparePreyMonsterSelectionGrid(CONST.SLOT.FIRST, assignedMonsters) == false then
+			self:resetPreyAllSlots()
+			return false
+		end
 	end
 
 	return true
+end
+
+function Player.sendRerollPrice(self)
+	local msg = NetworkMessage()
+	msg:addByte(0xE9)
+	msg:addU32(getRerollPrice(self:getLevel()))
+	msg:addByte(CONST.REROLL_WILDCARDS_COST)
+	msg:addByte(CONST.SELECT_WILDCARDS_COST)
+	-- hunting tasks
+	msg:addU32(0) -- reroll price
+	msg:addU32(0) -- reroll price?
+	msg:addByte(0)
+	msg:addByte(0)
+
+	msg:sendToPlayer(self)
+	msg:delete()
 end
 
 function Player.sendPreyMonsterSelectionGrid(self, slot)
@@ -486,15 +794,23 @@ function Player.sendPreyMonsterSelectionGrid(self, slot)
 	local msg = NetworkMessage()
 	msg:addByte(0xE8)
 	msg:addByte(slot)
-	msg:addByte(CONST.DATA_STATE.SELECTION)
+	msg:addByte(CONST.DATA_STATE.GRID_MONSTER_LIST)
 	msg:addByte(CONST.PREY_GRID_SIZE)
 
 	local slotData = getPlayerSlotData(self, slot)
+	if not slotData then
+		msg:delete()
+		return false
+	end
+
 	for i = 1, CONST.PREY_GRID_SIZE, 1 do
-		local mType = slotData.monsters[i]
+		local mType = MonsterType(slotData.monsters[i])
+		if not mType then
+			msg:delete()
+			return false
+		end
 		msg:addString(mType:name())
 		local outfit = mType:getOutfit()
-		local looktype = outfit.lookType
 		msg:addU16(outfit.lookType)
 		if outfit.lookType == 0 then
 			msg:addU16(mType.lookTypeEx);
@@ -507,11 +823,11 @@ function Player.sendPreyMonsterSelectionGrid(self, slot)
 		end
 	end
 
+	msg:addU32(math.max(0, slotData.freeRerollTime - os.time()))
+    msg:addByte(1)
+	msg:sendToPlayer(self)
+	msg:delete()
 	return true
-end
-
-function Player.sendPreyAllSlotsData(self, slot)
-
 end
 
 -- NETWORK MESSAGE
@@ -524,7 +840,7 @@ function Player.sendPreyLockedSlot(self, slot, isPremium)
 	msg:addByte(0xE8)
 	msg:addByte(slot)
 	msg:addByte(CONST.DATA_STATE.LOCKED)
-	msg:addByte(isPremium);
+	msg:addByte(isPremium)
 	msg:addU32(0)
 	msg:addByte(CONST.OPTION.LOCKED)
 	msg:sendToPlayer(self)
@@ -532,12 +848,12 @@ function Player.sendPreyLockedSlot(self, slot, isPremium)
 	return true
 end
 
-function Player.sendPreySelectedMonster(player, slot, monsterName, bonusType, bonusValue)
+function Player.sendPreySelectedMonster(player, slot, raceId, bonusType, bonusValue)
 	if not isValidSlot(slot) then
 		return false
 	end
 
-	local mType = MonsterType(monsterName)
+	local mType = MonsterType(raceId)
 	if not mType then
 		return false
 	end
@@ -548,9 +864,8 @@ function Player.sendPreySelectedMonster(player, slot, monsterName, bonusType, bo
 	msg:addByte(CONST.DATA_STATE.ACTIVE)
 	msg:addString(mType:name());
 	local outfit = mType:getOutfit()
-	local looktype = outfit.lookType
-	msg:addU16(looktype)
-	if looktype == 0 then
+	msg:addU16(outfit.lookType)
+	if outfit.lookType == 0 then
 		msg.addU16(mType.lookTypeEx)
 	else
 		msg:addByte(outfit.lookHead)
@@ -572,10 +887,39 @@ function Player.sendPreySelectedMonster(player, slot, monsterName, bonusType, bo
 	return true
 end
 
+function Player.sendPreyAllSlotsData(self)
+	for slot = 0, CONST.SLOT.SIZE -1, 1 do
+		if self:isPreySlotUnlocked(slot) then
+			local data = getPlayerSlotData(self, slot)
+			if not data then
+				return
+			end
+			if data.dataState == CONST.DATA_STATE.ACTIVE then
+				self:sendPreySelectedMonster(slot, data.raceId, data.bonusType, data.bonusValue)
+			else
+				self:sendPreyMonsterSelectionGrid(slot)
+
+			end
+		else
+			self:sendPreyLockedSlot(slot, self:isPremium())
+		end
+	end
+	self:sendResourceBalance(RESOURCE_PREY_WILDCARDS, self:getPreyWildcards())
+
+end
+
 function Player.loadPreyData(self)
 	if not getPlayerData(self) then
 		initPlayerTemplate(self)
 	end
 
-	loadPlayerData(self)
+	--loadPlayerData(self)
+end
+
+function Player.savePreyData(self)
+	if not getPlayerData(self) then
+		initPlayerTemplate(self)
+	end
+
+	savePlayerData(self)
 end
