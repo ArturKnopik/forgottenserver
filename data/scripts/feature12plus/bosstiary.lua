@@ -89,15 +89,28 @@ event.onDropLoot = function(self, corpse)
 	end
 
 	local player = Player(corpse:getCorpseOwner())
-	local mType = self:getType()
-	local doCreateLoot = false
+	if not player then
+		return
+	end
 
-	if not player or player:getStamina() > 840 then
-		doCreateLoot = true
+	local mType = self:getType()
+
+	if player:getStamina() <= 840 then
+		return
 	end
 
 	local bossData = Bosstiary.getBossByName(self:getName())
 	if not bossData then
+		return
+	end
+
+	print(bossData.id == player:getBosstiarySlotBoss(Bosstiary.getConst().SLOT.FIRST))
+	print(bossData.id == player:getBosstiarySlotBoss(Bosstiary.getConst().SLOT.SECOND))
+	print(bossData.id == Bosstiary.getTodayBoostedBoss().id)
+
+	if not (bossData.id == player:getBosstiarySlotBoss(Bosstiary.getConst().SLOT.FIRST) or
+		bossData.id == player:getBosstiarySlotBoss(Bosstiary.getConst().SLOT.SECOND) or
+		bossData.id == Bosstiary.getTodayBoostedBoss().id) then
 		return
 	end
 
@@ -106,17 +119,16 @@ event.onDropLoot = function(self, corpse)
 		bonusRollChance = Bosstiary.getConst().TODAY_BOOSTED_BOSS_KILL_BONUS
 	end
 
+
 	while bonusRollChance > 0 do
 		local roll = math.random(1, 100)
 		if roll <= bonusRollChance then
-			if doCreateLoot then
-				local monsterLoot = mType:getLoot()
-				for i = 1, #monsterLoot do
-					if isEqItem(monsterLoot[i]) then
-						local item = corpse:createLootItem(monsterLoot[i], 1)
-						if not item then
-							print("[Warning] DropLoot: Could not add loot item to corpse.")
-						end
+			local monsterLoot = mType:getLoot()
+			for i = 1, #monsterLoot do
+				if isEqItem(monsterLoot[i]) then
+					local item = corpse:createLootItem(monsterLoot[i], 1)
+					if not item then
+						print("[Warning] DropLoot: Could not add loot item to corpse.")
 					end
 				end
 			end

@@ -1,6 +1,7 @@
 local startup = GlobalEvent("prey_onStartup")
 function startup.onStartup()
 	Prey.initMonsters()
+	Prey.initNetworkMsg()
 	return true
 end
 startup:register()

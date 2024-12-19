@@ -117,17 +117,20 @@ local config = {
 
 	-- TODO: note: no exclusive monsters handled
 
-	local monsters = {
-		[CONST.MONSTER_DIFFICULT.EASY] = {},
-		[CONST.MONSTER_DIFFICULT.MEDIUM] = {},
-		[CONST.MONSTER_DIFFICULT.HARD] = {},
-		[CONST.MONSTER_DIFFICULT.EXTREME] = {},
-		all = {}
-	}
+local monsters = {
+	[CONST.MONSTER_DIFFICULT.EASY] = {},
+	[CONST.MONSTER_DIFFICULT.MEDIUM] = {},
+	[CONST.MONSTER_DIFFICULT.HARD] = {},
+	[CONST.MONSTER_DIFFICULT.EXTREME] = {},
+	all = {}
+}
 
 local players = {}
 
-local networkMsgMonsterList = nil
+local networkMsgMonsterList ={
+	msg = nil,
+	costPos = 0
+}
 
 -- PRIVATE API --
 
@@ -169,34 +172,37 @@ end
 local function prepareMonsterListNetworkMessage()
 	local msg = NetworkMessage()
 	msg:addByte(0xE8)
-	msg:addByte(0) -- slot, will be chnaged in future calls
-	msg:addByte(CONST.DATA_STATE.LIST_SELECTION) -- slot state, will be chnaged in future calls
+	msg:addByte(0) -- slot, will be changed in future calls
+	msg:addByte(CONST.DATA_STATE.LIST_SELECTION)
 	msg:addU16(#monsters.all)
 
 	for i = 1, #monsters.all, 1 do
 		local mType = monsters.all[i]
-		print(mType:getBestiaryInfo().raceId)
-		msg:addU16(mType:	getBestiaryInfo().raceId)
+		msg:addU16(mType:getBestiaryInfo().raceId)
 	end
 
-	networkMsgMonsterList = msg
+	networkMsgMonsterList.costPos = msg:tell()
+	msg:addU32(0) -- cost, will be updated in future call
+	msg:addByte(0) -- option, will be updated in future call
+
+	networkMsgMonsterList.msg = msg
+
+	print("prepare msg" .. networkMsgMonsterList.msg:len())
 end
 
-local function updateMonsterListMsg(slot)
-	local msg = NetworkMessage()
-	msg:setPo
-	msg:addByte(0xE8)
-	msg:addByte(0) -- slot, will be chnaged in future calls
-	msg:addByte(CONST.) -- slot state, will be chnaged in future calls
-	msg:addU16(#monsters.all)
-
-	for i = 1, #monsters.all, 1 do
-		local mType = monsters.all[i]
-		print(mType:getBestiaryInfo().raceId)
-		msg:addU16(mType:	getBestiaryInfo().raceId)
+local function updateMonsterListMsg(slot, cost, option)
+	if not networkMsgMonsterList.msg then
+		return
 	end
 
-	networkMsgMonsterList = msg
+	networkMsgMonsterList.msg:seek(1)
+	print(networkMsgMonsterList.msg:tell())
+	networkMsgMonsterList.msg:addByte(slot)
+	networkMsgMonsterList.msg:seek(networkMsgMonsterList.costPos)
+	print(networkMsgMonsterList.costPos, networkMsgMonsterList.msg:tell())
+	networkMsgMonsterList.msg:addU32(cost)
+	networkMsgMonsterList.msg:addByte(option)
+	print("update msg2", networkMsgMonsterList.msg:len())
 end
 
 function getPlayerData(player)
@@ -502,10 +508,14 @@ Prey.initMonsters = function()
 	end
 end
 
+Prey.initNetworkMsg = function()
+	prepareMonsterListNetworkMessage()
+end
+
 do
 	Prey.initMonsters()
-	prepareMonsterListNetworkMessage()
-	
+	Prey.initNetworkMsg()
+
 end
 
 function Player.setPreySelectedMonsterIndex(self, slot, index)
@@ -775,7 +785,7 @@ function Player.sendRerollPrice(self)
 	msg:addByte(0xE9)
 	msg:addU32(getRerollPrice(self:getLevel()))
 	msg:addByte(CONST.REROLL_WILDCARDS_COST)
-	msg:addByte(CONST.SELECT_WILDCARDS_COST)
+	msg:addByte(CONST.SELECT_WILDCARDS_)
 	-- hunting tasks
 	msg:addU32(0) -- reroll price
 	msg:addU32(0) -- reroll price?
@@ -905,7 +915,21 @@ function Player.sendPreyAllSlotsData(self)
 		end
 	end
 	self:sendResourceBalance(RESOURCE_PREY_WILDCARDS, self:getPreyWildcards())
+end
 
+function Player.sendPreyListSelection(self, slot)
+	if not networkMsgMonsterList.msg then
+		return
+	end
+
+	local slotData = getPlayerSlotData(self, slot)
+	if not slotData then
+		return
+	end
+
+	updateMonsterListMsg(slot, math.max(0, slotData.freeRerollTime - os.time()), slotData.option)
+
+	--networkMsgMonsterList.msg:sendToPlayer(self)
 end
 
 function Player.loadPreyData(self)
