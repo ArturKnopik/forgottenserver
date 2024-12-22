@@ -6,7 +6,7 @@ local config = {
 		DATA_STATE = {
 			REROLL_NEW_GRID = 0,
 			INACTIVE = 1,
-			ACTIVE = 2,
+			SELECTED_MONSTER = 2,
 			GRID_MONSTER_LIST = 3,
 			SELECTION_CHANGE_MONSTER = 4,
 			LIST_SELECTION = 5,
@@ -15,8 +15,9 @@ local config = {
 		ACTION_MSG = {
 			NEW_GRID = 0,
 			BONUS_REROLL = 1,
-			ACCEPT = 2,
-			LIST_SELECTION = 3
+			GRID_ACCEPT = 2,
+			LIST_SELECTION = 3,
+			LIST_ACCEPT = 4,
 		},
 		SLOT = {
 			FIRST = 0,
@@ -127,7 +128,7 @@ local monsters = {
 
 local players = {}
 
-local networkMsgMonsterList ={
+local cachedMonsterListMsg ={
 	msg = nil,
 	costPos = 0
 }
@@ -169,40 +170,23 @@ local function initPlayerTemplate(player)
 	}
 end
 
-local function prepareMonsterListNetworkMessage()
+local function prepareMonsterListNetworkMessage(slot, cost, option)
 	local msg = NetworkMessage()
 	msg:addByte(0xE8)
-	msg:addByte(0) -- slot, will be changed in future calls
+	msg:addByte(slot) -- slot, will be changed in future calls
 	msg:addByte(CONST.DATA_STATE.LIST_SELECTION)
-	msg:addU16(#monsters.all)
 
 	for i = 1, #monsters.all, 1 do
 		local mType = monsters.all[i]
 		msg:addU16(mType:getBestiaryInfo().raceId)
 	end
 
-	networkMsgMonsterList.costPos = msg:tell()
-	msg:addU32(0) -- cost, will be updated in future call
-	msg:addByte(0) -- option, will be updated in future call
+	cachedMonsterListMsg.costPos = msg:tell()
+	msg:addU32(cost) -- cost, will be updated in future call
+	msg:addByte(option) -- option, will be updated in future call
 
-	networkMsgMonsterList.msg = msg
-
-	print("prepare msg" .. networkMsgMonsterList.msg:len())
-end
-
-local function updateMonsterListMsg(slot, cost, option)
-	if not networkMsgMonsterList.msg then
-		return
-	end
-
-	networkMsgMonsterList.msg:seek(1)
-	print(networkMsgMonsterList.msg:tell())
-	networkMsgMonsterList.msg:addByte(slot)
-	networkMsgMonsterList.msg:seek(networkMsgMonsterList.costPos)
-	print(networkMsgMonsterList.costPos, networkMsgMonsterList.msg:tell())
-	networkMsgMonsterList.msg:addU32(cost)
-	networkMsgMonsterList.msg:addByte(option)
-	print("update msg2", networkMsgMonsterList.msg:len())
+	cachedMonsterListMsg.msg = msg
+	print(msg:len())
 end
 
 function getPlayerData(player)
@@ -523,8 +507,24 @@ function Player.setPreySelectedMonsterIndex(self, slot, index)
 	if not data then
 		return false
 	end
+	
 	print("setPreySelectedMonsterIndex",data.monsters[index + 1])
 	return setPreySelectedMonsterRaceId(self, slot, data.monsters[index + 1])
+end
+
+function Player.setPreyListSelectedMonsterRaceId(self, slot, raceId)
+	local data = getPlayerSlotData(self, slot)
+	if not data then
+		return false
+	end
+
+	local mType = MonsterType(raceId)
+	if not mType then
+		return false
+	end
+
+	print("setPreyListSelectedMonsterRaceId", raceId)
+	return setPreySelectedMonsterRaceId(self, slot, raceId)
 end
 
 function Player.getPreyWildcards(self, slot)
@@ -581,6 +581,17 @@ function Player.setPreyDataState(self, slot, dataState)
 	end
 
 	data.dataState = dataState
+
+	return true
+end
+
+function Player.setPreyOption(self, slot, option)
+	local data = getPlayerSlotData(self, slot)
+	if not data then
+		return false
+	end
+
+	data.option = option
 
 	return true
 end
@@ -766,12 +777,12 @@ function Player.preparePreyMonsterSelectionGrid(self, slot, alreadyAssignedMonst
 	return true
 end
 
-function Player.prepareMonstersGrids(self)
-	self:resetPreyAllSlots()
-
+-- should be used only in case of first login
+function Player.prepareMonstersGrids(self, slots)
 	local assignedMonsters = {}
-	for i = 0, CONST.SLOT.SIZE -1, 1 do
-		if self:preparePreyMonsterSelectionGrid(CONST.SLOT.FIRST, assignedMonsters) == false then
+	for _, slot in ipairs(slots) do
+		print(slot)
+		if self:preparePreyMonsterSelectionGrid(slot, assignedMonsters) == false then
 			self:resetPreyAllSlots()
 			return false
 		end
@@ -849,7 +860,7 @@ function Player.sendPreyLockedSlot(self, slot, isPremium)
 	local msg = NetworkMessage()
 	msg:addByte(0xE8)
 	msg:addByte(slot)
-	msg:addByte(CONST.DATA_STATE.LOCKED)
+	msg:addByte(self:getPreyDataState(slot))
 	msg:addByte(isPremium)
 	msg:addU32(0)
 	msg:addByte(CONST.OPTION.LOCKED)
@@ -871,7 +882,7 @@ function Player.sendPreySelectedMonster(player, slot, raceId, bonusType, bonusVa
 	local msg = NetworkMessage()
 	msg:addByte(0xE8)
 	msg:addByte(slot)
-	msg:addByte(CONST.DATA_STATE.ACTIVE)
+	msg:addByte(CONST.DATA_STATE.SELECTED_MONSTER)
 	msg:addString(mType:name());
 	local outfit = mType:getOutfit()
 	msg:addU16(outfit.lookType)
@@ -904,11 +915,13 @@ function Player.sendPreyAllSlotsData(self)
 			if not data then
 				return
 			end
-			if data.dataState == CONST.DATA_STATE.ACTIVE then
-				self:sendPreySelectedMonster(slot, data.raceId, data.bonusType, data.bonusValue)
-			else
-				self:sendPreyMonsterSelectionGrid(slot)
 
+			if data.dataState == CONST.DATA_STATE.SELECTED_MONSTER then
+				self:sendPreySelectedMonster(slot, data.raceId, data.bonusType, data.bonusValue)
+			elseif data.dataState == CONST.DATA_STATE.GRID_MONSTER_LIST then
+				self:sendPreyMonsterSelectionGrid(slot)
+			elseif data.dataState == CONST.DATA_STATE.LIST_SELECTION then
+				self:sendPreyListSelection(slot)
 			end
 		else
 			self:sendPreyLockedSlot(slot, self:isPremium())
@@ -918,7 +931,7 @@ function Player.sendPreyAllSlotsData(self)
 end
 
 function Player.sendPreyListSelection(self, slot)
-	if not networkMsgMonsterList.msg then
+	if not cachedMonsterListMsg.msg then
 		return
 	end
 
@@ -927,9 +940,11 @@ function Player.sendPreyListSelection(self, slot)
 		return
 	end
 
-	updateMonsterListMsg(slot, math.max(0, slotData.freeRerollTime - os.time()), slotData.option)
+	-- TODO: update NetworkMessage class to handle cached chunks 
+	prepareMonsterListNetworkMessage(slot, math.max(0, slotData.freeRerollTime - os.time()), slotData.option)
+	--updateMonsterListMsg(slot, math.max(0, slotData.freeRerollTime - os.time()), slotData.option)
 
-	--networkMsgMonsterList.msg:sendToPlayer(self)
+	cachedMonsterListMsg.msg:sendToPlayer(self)
 end
 
 function Player.loadPreyData(self)
@@ -937,7 +952,7 @@ function Player.loadPreyData(self)
 		initPlayerTemplate(self)
 	end
 
-	--loadPlayerData(self)
+	loadPlayerData(self)
 end
 
 function Player.savePreyData(self)

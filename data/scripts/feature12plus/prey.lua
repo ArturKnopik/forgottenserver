@@ -26,7 +26,7 @@ local handlerBuy = PacketHandler(0xEB)
 function handlerBuy.onReceive(player, msg)
     local slot = msg:getByte()
     local actionMsg = msg:getByte()
-	print("action", slot, action)
+	print("action", slot, actionMsg)
 	
 	--[[
 		jeśli wybrany monster to
@@ -34,27 +34,35 @@ function handlerBuy.onReceive(player, msg)
 			0 - get new grid
 			1 - reroll bonus
 			3 - select from list
+			4 - accept list
+	]]
+
+	-- done:
+	--[[
+		inactive
+		grid selection
+		list selection
+		selected monsters
 	]]
 
 	if actionMsg == Prey.getConst().ACTION_MSG.NEW_GRID then
 		print("NEW_GRID")
-		player:setPreyDataState(slot, Prey.getConst().DATA_STATE.ACTIVE)
+		player:setPreyDataState(slot, Prey.getConst().DATA_STATE.SELECTED_MONSTER)
 	elseif actionMsg == Prey.getConst().ACTION_MSG.BONUS_REROLL then
 		print("BONUS_REROLL")
-	elseif actionMsg == Prey.getConst().ACTION_MSG.ACCEPT then
+	elseif actionMsg == Prey.getConst().ACTION_MSG.GRID_ACCEPT then
 		print("MONSTER ACCEPT")
 		local gridSlot = msg:getByte()
 		player:setPreySelectedMonsterIndex(slot, gridSlot)
 		player:setPreyDataState(slot, Prey.getConst().DATA_STATE.ACTIVE)
 	elseif actionMsg == Prey.getConst().ACTION_MSG.LIST_SELECTION then
 		print("LIST_SELECTION")
-		--[[
-		local gridSlot = msg:getByte()
-		player:setPreySelectedMonsterIndex(slot, gridSlot)
-		player:resetPreyDurationTime(slot)
-		player:resetPreyMonstersSlot(slot)
-		player:setPreyDataState(slot, Prey.getConst().DATA_STATE.ACTIVE)
-		]]
+	elseif actionMsg == Prey.getConst().ACTION_MSG.LIST_ACCEPT then
+		print("LIST_ACCEPT")
+		local raceId = msg:getU16()
+		player:setPreyListSelectedMonsterRaceId(slot, race)
+
+		--player:sendPreyListSelection(slot)
 	end
 
 
