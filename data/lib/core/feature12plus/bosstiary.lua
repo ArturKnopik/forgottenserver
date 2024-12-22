@@ -455,11 +455,7 @@ function Bosstiary.getBossById(bossId)
 end
 
 function Bosstiary.getBossByName(bossName)
-	if bossesByName[bossName] ~= nil then
-		return bossesByName[bossName]
-	end
-
-	return ""
+	return bossesByName[bossName]
 end
 
 -- POINTS
