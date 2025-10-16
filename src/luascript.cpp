@@ -2015,6 +2015,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(L, TILESTATE_FLOORCHANGE_SOUTH_ALT);
 	registerEnum(L, TILESTATE_FLOORCHANGE_EAST_ALT);
 	registerEnum(L, TILESTATE_SUPPORTS_HANGABLE);
+	registerEnum(L, TILE_MAX_ITEMS);
 
 	registerEnum(L, WEAPON_NONE);
 	registerEnum(L, WEAPON_SWORD);
