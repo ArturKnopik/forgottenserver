@@ -1263,6 +1263,41 @@ function getThingfromPos(pos)
 	return pushThing(thing)
 end
 
+function removeBottomItem(targetTile)
+	local itemToRemove = targetTile:getTopDownItem()
+	if itemToRemove then
+		itemToRemove:remove()
+	end
+end
+
+function moveToInboxOrDestroyBottomItem(targetTile)
+	local targetTileItems = targetTile:getItems()
+	if #targetTileItems < TILE_MAX_ITEMS then
+		return
+	end
+
+	local house = targetTile:getHouse()
+	if not house then
+		removeBottomItem(targetTile)
+		return
+	end
+
+	local owner = house:getOwnerName()
+	local player = Player(owner)
+	if not owner or not player then
+		removeBottomItem(targetTile)
+		return
+	end
+
+	local itemToMove = targetTile:getTopDownItem()
+	local inbox = player:getInbox()
+	if not inbox then
+		removeBottomItem(targetTile)
+	end
+
+	itemToMove:moveTo(inbox)
+end
+
 function doRelocate(fromPos, toPos)
 	if fromPos == toPos then
 		return false
@@ -1273,7 +1308,8 @@ function doRelocate(fromPos, toPos)
 		return false
 	end
 
-	if not Tile(toPos) then
+	local targetTile = Tile(toPos)
+	if not targetTile then
 		return false
 	end
 
@@ -1282,6 +1318,7 @@ function doRelocate(fromPos, toPos)
 		if thing then
 			if thing:isItem() then
 				if ItemType(thing:getId()):isMovable() then
+					moveToInboxOrDestroyBottomItem(targetTile)
 					thing:moveTo(toPos)
 				end
 			elseif thing:isCreature() then
